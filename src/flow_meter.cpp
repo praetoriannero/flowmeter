@@ -78,13 +78,14 @@ public:
         std::cout << "Read " << pkt_cnt << " packets in " << seconds << " seconds" << std::endl;
         std::cout << pkts_per_sec << " pkts/sec" << std::endl;
     }
+
 private:
     Tins::FileSniffer sniffer_;
     std::string pcap_path_;
 };
 
 int main(int argc, char **argv) {
-    CLI::App app{"A program to monitor flows"};
+    CLI::App app{"A program to evaluate IP-based flows"};
 
     std::string pcap_path;
     app.add_option("-i,--input-path", pcap_path, "Path to .pcap/.pcapng file");
