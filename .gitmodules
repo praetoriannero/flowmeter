@@ -1,0 +1,15 @@
+[submodule "third-party/libtins"]
+	path = third-party/libtins
+	url = https://github.com/mfontanini/libtins.git
+[submodule "third-party/libpcap"]
+	path = third-party/libpcap
+	url = https://github.com/the-tcpdump-group/libpcap.git
+[submodule "third-party/pybind11"]
+	path = third-party/pybind11
+	url = https://github.com/pybind/pybind11.git
+[submodule "third-party/fmt"]
+	path = third-party/fmt
+	url = https://github.com/fmtlib/fmt.git
+[submodule "third-party/CLI11"]
+	path = third-party/CLI11
+	url = https://github.com/CLIUtils/CLI11.git
