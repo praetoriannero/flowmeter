@@ -7,6 +7,7 @@
 #include "tins/sniffer.h"
 #include "tins/packet.h"
 #include <fmt/core.h>
+#include "CLI/CLI.hpp"
 
 enum ExpirationCode { ALIVE, ACTIVE_TIMEOUT, IDLE_TIMEOUT, USER_SPECIFIED };
 
@@ -57,9 +58,11 @@ struct Flow {
 class Reader {
 public:
     Reader(const std::string& input_file)
-    : sniffer_(input_file) {}
+    : sniffer_(input_file),
+      pcap_path_(input_file) {}
 
     void run() {
+        std::cout << "Processing " << pcap_path_ << std::endl;
         Tins::Packet packet;
         auto start_time = std::chrono::high_resolution_clock::now();
         auto pkt_cnt = 0;
@@ -77,25 +80,20 @@ public:
     }
 private:
     Tins::FileSniffer sniffer_;
+    std::string pcap_path_;
 };
 
-int main(int argc, char* argv[]) {
-    fmt::print("It worked!\n");
-    if (argc != 2) {
-        std::cout << "Usage: " << argv[0] << " <input-file>" << std::endl;
-        return 1;
-    }
-    try {
-        // Build the defragmented
-        Reader reader(argv[1]);
-        std::cout << "Processing " << argv[1] << std::endl;
+int main(int argc, char **argv) {
+    CLI::App app{"A program to monitor flows"};
 
-        // Run!
-        reader.run();
-        std::cout << "Done" << std::endl;
-    }
-    catch (std::exception& ex) {
-        std::cerr << "Error: " << ex.what() << std::endl;
-    }
+    std::string pcap_path;
+    app.add_option("-i,--input-path", pcap_path, "Path to .pcap/.pcapng file");
+
+    CLI11_PARSE(app, argc, argv);
+
+    Reader reader(pcap_path);
+
+    reader.run();
+    std::cout << "Done" << std::endl;
 }
 

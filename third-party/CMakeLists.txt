@@ -19,3 +19,7 @@ message(STATUS "pybind11 loaded.")
 message(STATUS "Loading library fmt...")
 add_subdirectory(fmt)
 message(STATUS "fmt loaded.")
+
+message(STATUS "Loading library CLI11...")
+add_subdirectory(CLI11)
+message(STATUS "CLI11 loaded.")
