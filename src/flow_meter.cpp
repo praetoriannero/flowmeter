@@ -1,18 +1,22 @@
-#include <chrono>
-#include <cstdint>
-#include <iostream>
-#include <string>
-#include <stdexcept>
-#include <map>
-#include <limits>
+#include "CLI/CLI.hpp"
 #include "tins/ip.h"
 #include "tins/ipv6.h"
+#include "tins/packet.h"
+#include "tins/sniffer.h"
 #include "tins/tcp.h"
 #include "tins/udp.h"
-#include "tins/sniffer.h"
-#include "tins/packet.h"
+#include <chrono>
+#include <cstdint>
 #include <fmt/core.h>
-#include "CLI/CLI.hpp"
+#include <iomanip>
+#include <iostream>
+#include <limits>
+#include <map>
+#include <sstream>
+#include <stdexcept>
+#include <string>
+
+uint32_t MAX_DOUBLE_PRECISION = std::numeric_limits<double>::digits10 + 1;
 
 enum ExpirationCode { ALIVE, ACTIVE_TIMEOUT, IDLE_TIMEOUT, USER_SPECIFIED };
 
@@ -20,26 +24,41 @@ struct FlowKey {
     // FlowKey()
 };
 
+template <typename T>
 struct Statistic {
     std::string name;
-    uint64_t min;
-    uint64_t max;
+    T min;
+    T max;
+    T count;
     double mean;
     double stddev = 0;
 
-    Statistic(std::string& name, uint64_t& init_val)
-    : min(init_val),
-      max(init_val),
-      mean(init_val) {}
+    Statistic(std::string &stat_name, T &init_val)
+        : name(stat_name), min(init_val), max(init_val), mean(init_val),
+          count(1) {}
 
-    void update(uint64_t& val) {
+    void update(T &val) {
+        count++;
         min = val < min ? val : min;
         max = val > max ? val : max;
+        auto tmp_mean = mean;
+        mean += (val - tmp_mean) / count;
+        stddev += (val - tmp_mean) * (val - mean);
+    }
 
+    std::string header() {
+        std::stringstream ss;
+        ss << name << "_min," << name << "_max," << name << "_mean," << name
+           << "_stddev,";
+        return ss.str();
     }
 
     std::string to_string() {
-        return "NOT_IMPLEMENTED";
+        std::stringstream ss;
+        ss << min << "," << max << ","
+           << std::setprecision(MAX_DOUBLE_PRECISION) << mean << ","
+           << std::setprecision(MAX_DOUBLE_PRECISION) << stddev;
+        return ss.str();
     }
 };
 
@@ -85,13 +104,13 @@ struct Flow {
     uint64_t pkt_count = 0;
     uint64_t byte_count = 0;
 
-    uint32_t min_ps;
-    uint32_t max_ps;
+    uint64_t min_ps;
+    uint64_t max_ps;
     double mean_ps;
     double stddev_ps = 0;
 
-    uint32_t min_piat_ns;
-    uint32_t max_piat_ns;
+    uint64_t min_piat_ns;
+    uint64_t max_piat_ns;
     double mean_piat_ns;
     double stddev_piat_ns = 0;
 
@@ -100,16 +119,16 @@ struct Flow {
     double mean_entropy;
     double stddev_entropy = 0;
 
-    uint32_t syn_count = 0;
-    uint32_t cwr_count = 0;
-    uint32_t ece_count = 0;
-    uint32_t urg_count = 0;
-    uint32_t ack_count = 0;
-    uint32_t psh_count = 0;
-    uint32_t rst_count = 0;
-    uint32_t fin_count = 0;
+    uint64_t syn_count = 0;
+    uint64_t cwr_count = 0;
+    uint64_t ece_count = 0;
+    uint64_t urg_count = 0;
+    uint64_t ack_count = 0;
+    uint64_t psh_count = 0;
+    uint64_t rst_count = 0;
+    uint64_t fin_count = 0;
 
-    Flow(Tins::Packet& pkt) {
+    Flow(Tins::Packet &pkt) {
         auto pkt_size = pkt.pdu()->size();
         min_ps = pkt_size;
         max_ps = pkt_size;
@@ -119,12 +138,9 @@ struct Flow {
 
 struct NetworkFlow {
     NetworkFlow(int64_t active_timeout, int64_t idle_timeout)
-    : active_timeout_(active_timeout),
-      idle_timeout_(idle_timeout) {}
+        : active_timeout_(active_timeout), idle_timeout_(idle_timeout) {}
 
-    void update(Tins::Packet& pkt) {
-        auto tmp = pkt;
-    }
+    void update(Tins::Packet &pkt) { auto tmp = pkt; }
 
     // void add_field(std::string field_name, )
 
@@ -151,16 +167,12 @@ struct NetworkFlow {
 
     int64_t active_timeout_{};
     int64_t idle_timeout_{};
-
-
 };
 
-
 class Reader {
-public:
-    Reader(const std::string& input_file)
-    : sniffer_(input_file),
-      pcap_path_(input_file) {}
+  public:
+    Reader(const std::string &input_file)
+        : sniffer_(input_file), pcap_path_(input_file) {}
 
     void run() {
         std::cout << "Processing " << pcap_path_ << std::endl;
@@ -171,16 +183,20 @@ public:
             pkt_cnt++;
         }
         auto end_time = std::chrono::high_resolution_clock::now();
-        auto nanosecs = std::chrono::duration_cast<std::chrono::nanoseconds>(end_time - start_time).count();
+        auto nanosecs = std::chrono::duration_cast<std::chrono::nanoseconds>(
+                            end_time - start_time)
+                            .count();
         std::cout << nanosecs << std::endl;
         double seconds = nanosecs / 1'000'000'000.0;
         fmt::print("{}\n", seconds);
         double pkts_per_sec = pkt_cnt / seconds;
-        std::cout << "Read " << pkt_cnt << " packets in " << seconds << " seconds" << std::endl;
-        std::cout << pkts_per_sec << " pkts/sec" << std::endl;
+        std::cout << "Read " << pkt_cnt << " packets in " << seconds
+                  << " seconds" << std::endl;
+        std::cout << std::setprecision(MAX_DOUBLE_PRECISION) << pkts_per_sec
+                  << " pkts/sec" << std::endl;
     }
 
-private:
+  private:
     Tins::FileSniffer sniffer_;
     std::string pcap_path_;
 };
@@ -193,11 +209,20 @@ int main(int argc, char **argv) {
     app.add_option("-i,--input-path", pcap_path, "Path to .pcap/.pcapng file");
     app.add_option("-o,--output-path", csv_path, "Path to output .csv file");
 
+    auto i = []() { return 1; };
+
+    uint64_t init_val = 4;
+    std::string feature_name = "test";
+    auto stat = Statistic<uint64_t>(feature_name, init_val);
+    uint64_t update_val = 5;
+    stat.update(update_val);
+    stat.update(update_val);
+    std::cout << stat.to_string() << std::endl;
+
     CLI11_PARSE(app, argc, argv);
 
     Reader reader(pcap_path);
 
-    reader.run();
+    // reader.run();
     std::cout << "Done" << std::endl;
 }
-
