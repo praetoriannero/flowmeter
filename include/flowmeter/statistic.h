@@ -1,6 +1,7 @@
 #ifndef FLOWMETER_STATISTIC_H
 #define FLOWMETER_STATISTIC_H
 
+#include <limits>
 #include <sstream>
 #include <string>
 
@@ -11,21 +12,19 @@ namespace Net {
 template <typename T>
 struct Statistic {
     std::string name;
-    T min;
-    T max;
-    T count;
-    double mean;
+    T min = std::numeric_limits<T>::max();
+    T max = std::numeric_limits<T>::min();
+    T count = 0;
+    double mean = 0;
     double stddev = 0;
 
-    Statistic(std::string &stat_name, T &init_val)
-        : name(stat_name), min(init_val), max(init_val), mean(init_val),
-          count(1) {}
+    Statistic(std::string stat_name) : name(stat_name) {}
 
     void update(T &val) {
         count++;
         min = val < min ? val : min;
         max = val > max ? val : max;
-        auto tmp_mean = mean;
+        double tmp_mean = mean;
         mean += (val - tmp_mean) / count;
         stddev += (val - tmp_mean) * (val - mean);
     }
@@ -41,9 +40,13 @@ struct Statistic {
 
     std::string to_string() {
         std::stringstream ss;
-        ss << min << ","
-           << max << ","
-           << std::setprecision(MAX_DOUBLE_PRECISION) << mean << ","
+        if constexpr(std::is_same<T, double>) {
+            ss << std::setprecision(MAX_DOUBLE_PRECISION) << min << ","
+               << std::setprecision(MAX_DOUBLE_PRECISION) << max << ",";
+        } else {
+            ss << min << "," << max << ",";
+        }
+        ss << std::setprecision(MAX_DOUBLE_PRECISION) << mean << ","
            << std::setprecision(MAX_DOUBLE_PRECISION) << stddev;
         return ss.str();
     }

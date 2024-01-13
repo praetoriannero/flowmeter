@@ -42,10 +42,17 @@ class Meter {
                   << " pkts/sec" << std::endl;
     }
 
+    void update(Tins::Packet& pkt) {
+        // extract flow key
+        // add to flow cache if not exist
+    }
+
   private:
     Tins::FileSniffer sniffer_;
     std::string pcap_path_;
-    std::map<FlowKey, Flow> flow_cache_;
+    // TO-DO: add types to FlowKey
+    // TO-DO: add custom hashing function for FlowKey
+    // std::map<FlowKey, Flow> flow_cache_;
 };
 
 } // end namespace Net
