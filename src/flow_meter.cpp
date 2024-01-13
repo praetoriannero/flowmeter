@@ -23,7 +23,7 @@ int main(int argc, char **argv) {
 
     uint64_t init_val = 4;
     std::string feature_name = "test";
-    auto stat = Statistic<uint64_t>(feature_name, init_val);
+    auto stat = Net::Statistic<uint64_t>(feature_name, init_val);
     uint64_t update_val = 5;
     stat.update(update_val);
     stat.update(update_val);
@@ -31,8 +31,9 @@ int main(int argc, char **argv) {
 
     CLI11_PARSE(app, argc, argv);
 
-    Meter meter(pcap_path);
+    Net::Meter meter(pcap_path);
 
     meter.run();
     std::cout << "Done" << std::endl;
 }
+

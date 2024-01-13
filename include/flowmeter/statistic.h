@@ -6,6 +6,8 @@
 
 #include "flowmeter/constants.h"
 
+namespace Net {
+
 template <typename T>
 struct Statistic {
     std::string name;
@@ -46,5 +48,7 @@ struct Statistic {
         return ss.str();
     }
 };
+
+} // end namespace Net
 
 #endif

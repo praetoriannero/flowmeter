@@ -9,6 +9,8 @@
 #include "tins/udp.h"
 #include <cstdint>
 
+namespace Net {
+
 enum ExpirationCode { ALIVE, ACTIVE_TIMEOUT, IDLE_TIMEOUT, USER_SPECIFIED };
 
 struct FlowKey {
@@ -87,5 +89,6 @@ struct NetworkFlow {
     int64_t idle_timeout{};
 };
 
+}
 
 #endif

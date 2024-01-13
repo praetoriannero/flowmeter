@@ -9,8 +9,12 @@
 #include "tins/sniffer.h"
 #include "tins/tcp.h"
 #include "tins/udp.h"
+#include <map>
 
 #include "flowmeter/constants.h"
+#include "flowmeter/flow.h"
+
+namespace Net {
 
 class Meter {
   public:
@@ -41,6 +45,9 @@ class Meter {
   private:
     Tins::FileSniffer sniffer_;
     std::string pcap_path_;
+    std::map<FlowKey, Flow> flow_cache_;
 };
+
+} // end namespace Net
 
 #endif

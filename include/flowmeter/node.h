@@ -3,6 +3,8 @@
 
 #include <cstdint>
 
+namespace Net {
+
 struct NetNode {
     // counts for incoming/outgoing ports
     uint64_t inc_port;
@@ -37,5 +39,7 @@ struct NetNode {
     // num node pairs in neighborhood / total pairs
     double connectivity;
 };
+
+} // end namespace Net
 
 #endif
