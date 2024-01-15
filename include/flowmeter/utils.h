@@ -8,5 +8,4 @@ double get_packet_timestamp(const Tins::Packet& packet) {
         static_cast<double>(packet.timestamp().microseconds());
 }
 
-
 #endif

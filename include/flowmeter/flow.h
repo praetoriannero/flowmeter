@@ -11,6 +11,7 @@
 #include "tins/udp.h"
 #include <cstdint>
 
+#include "flowmeter/service.h"
 #include "flowmeter/statistic.h"
 #include "flowmeter/utils.h"
 
@@ -18,14 +19,17 @@ namespace Net {
 
 enum ExpirationCode { ALIVE, ACTIVE_TIMEOUT, IDLE_TIMEOUT, USER_SPECIFIED };
 
-template <typename IpAddress>
 struct FlowKey {
-    Service<IpAddress> l_service;  // "left" service, less than r_service
-    Service<IpAddress> r_service;  // "right" service, greather than l_service
+    Service l_service;  // "left" service, less than r_service
+    Service r_service;  // "right" service, greather than l_service
     uint8_t vlan_id;
     uint8_t transport_proto;
 
-    FlowKey(const )
+    FlowKey(ServicePair &pair, const uint8_t vlan, const uint8_t protocol)
+    : l_service(pair.l_service()),
+      r_service(pair.r_service()),
+      vlan_id(vlan),
+      transport_proto(protocol) {}
 };
 
 template <typename TransportProto>
@@ -99,7 +103,7 @@ struct Flow {
         duration_ms = last_seen_ms - first_seen_ms;
     }
 
-    std::string to_string() {
+    std::string to_string() const {
         return "NOT IMPLEMENTED";
     }
 };

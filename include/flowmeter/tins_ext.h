@@ -12,15 +12,18 @@ namespace Net {
 
 #define ADDR_SIZE 16
 
-std::array<uint8_t, ADDR_SIZE> to_bytes(const Tins::IPv4Address &addr) {
-    std::array<uint8_t, ADDR_SIZE> res_array;
+typedef std::array<uint8_t, ADDR_SIZE> IpAddress;
+typedef Tins::HWAddress<6> MacAddress;
+
+IpAddress to_bytes(Tins::IPv4Address addr) {
+    IpAddress res_array;
     auto int_addr = uint32_t(addr);
     std::memcpy(res_array.data(), &int_addr, addr.size());
     return res_array;
 }
 
-std::array<uint8_t, ADDR_SIZE> to_bytes(const Tins::IPv6Address &addr) {
-    std::array<uint8_t, ADDR_SIZE> res_array;
+IpAddress to_bytes(Tins::IPv6Address addr) {
+    IpAddress res_array;
     auto i = 0;
     for (auto byte : addr) {
         res_array[i] = static_cast<uint8_t>(byte);
