@@ -18,20 +18,17 @@ namespace Net {
 
 enum ExpirationCode { ALIVE, ACTIVE_TIMEOUT, IDLE_TIMEOUT, USER_SPECIFIED };
 
-using MacAddress = Tins::HWAddress<6>;
-
 template <typename IpAddress>
 struct FlowKey {
-    MacAddress l_mac_addr;
-    MacAddress r_mac_addr;
-    IpAddress l_ip_addr;
-    IpAddress r_ip_addr;
-    uint16_t l_port;
-    uint16_t r_port;
+    Service<IpAddress> l_service;  // "left" service, less than r_service
+    Service<IpAddress> r_service;  // "right" service, greather than l_service
     uint8_t vlan_id;
     uint8_t transport_proto;
+
+    FlowKey(const )
 };
 
+template <typename TransportProto>
 struct Flow {
     std::string direction;
     double first_seen_ms = 0;
@@ -41,7 +38,7 @@ struct Flow {
     uint64_t byte_count = 0;
     Statistic<uint64_t> packet_size{"ps"};   // packet size
     Statistic<double> packet_iat{"piat"};    // packet inter-arrival time
-    // Statistic<double> packet_entropy{"entropy", 0.0};
+    // Statistic<double> packet_entropy{"entropy", 0.0};    // Shannon entropy of packet; maybe too slow??
     uint64_t syn_count = 0;
     uint64_t cwr_count = 0;
     uint64_t ece_count = 0;
@@ -51,18 +48,17 @@ struct Flow {
     uint64_t rst_count = 0;
     uint64_t fin_count = 0;
 
-    Flow(std::string direction_) : direction(direction_) {}
+    Flow(const std::string direction_) : direction(direction_) {}
 
-    void update(Tins::Packet &packet) {
+    void update(const Tins::Packet &packet) {
         auto pkt_timestamp = get_packet_timestamp(packet);
-        auto pkt_byte_count = packet.pdu()->size();
         pkt_count++;
 
         first_seen_ms = pkt_timestamp < first_seen_ms ? pkt_timestamp : first_seen_ms;
         auto tmp_last_seen_ms = last_seen_ms;
         last_seen_ms = pkt_timestamp > last_seen_ms ? pkt_timestamp : last_seen_ms;
         
-        byte_count += pkt_byte_count;
+        byte_count += packet.pdu()->size();;
 
         packet_size.update(byte_count);
 
@@ -70,21 +66,37 @@ struct Flow {
             auto time_delta = last_seen_ms - tmp_last_seen_ms;
             packet_iat.update(time_delta);
         }
+
+        if (constexpr(std::is_same<TransportProto, Tins::TCP>())) {
+            if (tcp_pdu.get_flag(Tins::TCP::SYN)) { 
+                syn_count++;
+            }
+            if (tcp_pdu.get_flag(Tins::TCP::CWR)) { 
+                cwr_count++;
+            }
+            if (tcp_pdu.get_flag(Tins::TCP::ECE)) { 
+                ece_count++;
+            }
+            if (tcp_pdu.get_flag(Tins::TCP::URG)) { 
+                urg_count++;
+            }
+            if (tcp_pdu.get_flag(Tins::TCP::ACK)) { 
+                ack_count++;
+            }
+            if (tcp_pdu.get_flag(Tins::TCP::PSH)) { 
+                psh_count++;
+            }
+            if (tcp_pdu.get_flag(Tins::TCP::RST)) { 
+                rst_count++;
+            }
+            if (tcp_pdu.get_flag(Tins::TCP::FIN)) { 
+                fin_count++;
+            }
+        }
     }
 
     void finalize() {
         duration_ms = last_seen_ms - first_seen_ms;
-    }
-
-    void update(Tins::Packet &packet, Tins::TCP &tcp_pdu) {
-        if (tcp_pdu.get_flag(Tins::TCP::SYN)) { syn_count++; }
-        if (tcp_pdu.get_flag(Tins::TCP::CWR)) { cwr_count++; }
-        if (tcp_pdu.get_flag(Tins::TCP::ECE)) { ece_count++; }
-        if (tcp_pdu.get_flag(Tins::TCP::URG)) { urg_count++; }
-        if (tcp_pdu.get_flag(Tins::TCP::ACK)) { ack_count++; }
-        if (tcp_pdu.get_flag(Tins::TCP::PSH)) { psh_count++; }
-        if (tcp_pdu.get_flag(Tins::TCP::RST)) { rst_count++; }
-        if (tcp_pdu.get_flag(Tins::TCP::FIN)) { fin_count++; }
     }
 
     std::string to_string() {
