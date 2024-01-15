@@ -13,3 +13,6 @@
 [submodule "third-party/CLI11"]
 	path = third-party/CLI11
 	url = https://github.com/CLIUtils/CLI11.git
+[submodule "third-party/absl"]
+	path = third-party/absl
+	url = https://github.com/abseil/abseil-cpp.git

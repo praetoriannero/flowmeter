@@ -23,3 +23,7 @@ message(STATUS "fmt loaded.")
 message(STATUS "Loading library CLI11...")
 add_subdirectory(CLI11)
 message(STATUS "CLI11 loaded.")
+
+message(STATUS "Loading library abseil-cpp...")
+add_subdirectory(absl)
+message(STATUS "abseil-cpp loaded.")

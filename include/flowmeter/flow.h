@@ -30,6 +30,22 @@ struct FlowKey {
       r_service(pair.r_service()),
       vlan_id(vlan),
       transport_proto(protocol) {}
+
+    template <typename H>
+    friend H AbslHashValue(H h, const FlowKey &key) {
+        return H::combine(std::move(h), key.l_service, key.r_service, key.vlan_id, key.transport_proto);
+    }
+
+    bool operator==(const FlowKey &key) {
+        return l_service == key.l_service &&
+            r_service == key.r_service &&
+            vlan_id == key.vlan_id &&
+            transport_proto == key.transport_proto;
+    }
+
+    bool operator!=(const FlowKey &key) {
+        return !(operator==(key));
+    }
 };
 
 template <typename TransportProto>
@@ -71,29 +87,30 @@ struct Flow {
             packet_iat.update(time_delta);
         }
 
-        if (constexpr(std::is_same<TransportProto, Tins::TCP>())) {
-            if (tcp_pdu.get_flag(Tins::TCP::SYN)) { 
+        if constexpr(std::is_same<TransportProto, Tins::TCP>()) {
+            auto* tcp_pdu = packet.pdu()->find_pdu<Tins::TCP>();
+            if (tcp_pdu->get_flag(Tins::TCP::SYN)) { 
                 syn_count++;
             }
-            if (tcp_pdu.get_flag(Tins::TCP::CWR)) { 
+            if (tcp_pdu->get_flag(Tins::TCP::CWR)) { 
                 cwr_count++;
             }
-            if (tcp_pdu.get_flag(Tins::TCP::ECE)) { 
+            if (tcp_pdu->get_flag(Tins::TCP::ECE)) { 
                 ece_count++;
             }
-            if (tcp_pdu.get_flag(Tins::TCP::URG)) { 
+            if (tcp_pdu->get_flag(Tins::TCP::URG)) { 
                 urg_count++;
             }
-            if (tcp_pdu.get_flag(Tins::TCP::ACK)) { 
+            if (tcp_pdu->get_flag(Tins::TCP::ACK)) { 
                 ack_count++;
             }
-            if (tcp_pdu.get_flag(Tins::TCP::PSH)) { 
+            if (tcp_pdu->get_flag(Tins::TCP::PSH)) { 
                 psh_count++;
             }
-            if (tcp_pdu.get_flag(Tins::TCP::RST)) { 
+            if (tcp_pdu->get_flag(Tins::TCP::RST)) { 
                 rst_count++;
             }
-            if (tcp_pdu.get_flag(Tins::TCP::FIN)) { 
+            if (tcp_pdu->get_flag(Tins::TCP::FIN)) { 
                 fin_count++;
             }
         }
