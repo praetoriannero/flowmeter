@@ -1,16 +1,16 @@
 #ifndef FLOWMETER_METER_H
 #define FLOWMETER_METER_H
 
-#include <iomanip>
-#include <iostream>
+#include "absl/container/node_hash_map.h"
+#include "tins/ethernetII.h"
 #include "tins/ip.h"
 #include "tins/ipv6.h"
-#include "tins/ethernetII.h"
 #include "tins/packet.h"
 #include "tins/sniffer.h"
 #include "tins/tcp.h"
 #include "tins/udp.h"
-#include "absl/container/flat_hash_map.h"
+#include <iomanip>
+#include <iostream>
 
 #include "flowmeter/constants.h"
 #include "flowmeter/flow.h"
@@ -20,9 +20,7 @@ using high_resolution_clock = std::chrono::high_resolution_clock;
 namespace Net {
 
 template <typename IpVersion, typename TransportProto>
-struct MeterImpl {
-
-};
+struct MeterImpl {};
 
 class Meter {
   public:
@@ -45,9 +43,11 @@ class Meter {
             pkt_count++;
 
             if (flow_cache_.size()) {
-                auto check_timeout = [packet_ts](auto& it) {
-                    auto time_since_start = packet_ts - it.second.last_update_ts();
-                    auto time_since_update = packet_ts - it.second.last_update_ts();
+                auto check_timeout = [packet_ts](auto &it) {
+                    auto time_since_start =
+                        packet_ts - it.second.last_update_ts();
+                    auto time_since_update =
+                        packet_ts - it.second.last_update_ts();
                     if (time_since_start >= active_timeout_) {
                         it.second.exp_code = ExpirationCode::ACTIVE_TIMEOUT;
                         return true;
@@ -67,7 +67,8 @@ class Meter {
                 continue;
             }
 
-            auto [it, success] = flow_cache_.emplace(services_, NetworkFlow(services_));
+            auto [it, success] =
+                flow_cache_.emplace(services_, NetworkFlow(services_));
 
             it->second.update(packet_, services_);
 
@@ -85,7 +86,7 @@ class Meter {
                   << " pkts/sec" << std::endl;
     }
 
-    void update(Tins::Packet& pkt) {
+    void update(Tins::Packet &pkt) {
         // extract flow key
         // add to flow cache if not exist
     }
@@ -99,7 +100,7 @@ class Meter {
     double pkts_per_sec_;
     static constexpr double active_timeout_{120};
     static constexpr double idle_timeout_{60};
-    absl::flat_hash_map<ServicePair, NetworkFlow> flow_cache_;
+    absl::node_hash_map<ServicePair, NetworkFlow> flow_cache_;
 };
 
 } // end namespace Net

@@ -40,7 +40,7 @@ struct Statistic {
 
     std::string to_string() {
         std::stringstream ss;
-        if constexpr(std::is_same<T, double>()) {
+        if constexpr (std::is_same<T, double>()) {
             ss << std::setprecision(MAX_DOUBLE_PRECISION) << min << ","
                << std::setprecision(MAX_DOUBLE_PRECISION) << max << ",";
         } else {

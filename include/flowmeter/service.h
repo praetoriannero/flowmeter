@@ -1,7 +1,6 @@
 #ifndef FLOWMETER_SERVICE_H
 #define FLOWMETER_SERVICE_H
 
-#include <array>
 #include "tins/constants.h"
 #include "tins/dot1q.h"
 #include "tins/ethernetII.h"
@@ -11,6 +10,7 @@
 #include "tins/packet.h"
 #include "tins/tcp.h"
 #include "tins/udp.h"
+#include <array>
 
 #include "flowmeter/tins_ext.h"
 
@@ -22,18 +22,15 @@ struct Service {
     uint16_t port;
 
     Service(MacAddress mac_address, IpAddress ip_address, uint16_t port_num)
-    : mac_addr(mac_address),
-      ip_addr(ip_address),
-      port(port_num) {}
+        : mac_addr(mac_address), ip_addr(ip_address), port(port_num) {}
 
     Service(const Service &service)
-    : mac_addr(service.mac_addr),
-      ip_addr(service.ip_addr),
-      port(service.port) {}
+        : mac_addr(service.mac_addr), ip_addr(service.ip_addr),
+          port(service.port) {}
 
     Service() = default;
 
-    bool operator>(const Service& service) const {
+    bool operator>(const Service &service) const {
         if (mac_addr > service.mac_addr) {
             return true;
         } else if (mac_addr < service.mac_addr) {
@@ -45,7 +42,7 @@ struct Service {
         } else if (ip_addr < service.ip_addr) {
             return false;
         }
-        
+
         if (port > service.port) {
             return true;
         } else if (port < service.port) {
@@ -55,11 +52,11 @@ struct Service {
         return false;
     }
 
-    bool operator<=(const Service& service) const {
+    bool operator<=(const Service &service) const {
         return !operator>(service);
     }
 
-    bool operator<(const Service& service) const {
+    bool operator<(const Service &service) const {
         if (mac_addr < service.mac_addr) {
             return true;
         } else if (mac_addr > service.mac_addr) {
@@ -71,7 +68,7 @@ struct Service {
         } else if (ip_addr > service.ip_addr) {
             return false;
         }
-        
+
         if (port < service.port) {
             return true;
         } else if (port > service.port) {
@@ -81,23 +78,21 @@ struct Service {
         return false;
     }
 
-    bool operator>=(const Service& service) const {
+    bool operator>=(const Service &service) const {
         return !operator<(service);
     }
 
-    bool operator==(const Service& service) const {
-        return mac_addr == service.mac_addr &&
-            ip_addr == service.ip_addr &&
-            port == service.port;
+    bool operator==(const Service &service) const {
+        return mac_addr == service.mac_addr && ip_addr == service.ip_addr &&
+               port == service.port;
     }
 
-    bool operator!=(const Service& service) const {
-        return mac_addr != service.mac_addr ||
-            ip_addr != service.ip_addr ||
-            port != service.port;
+    bool operator!=(const Service &service) const {
+        return mac_addr != service.mac_addr || ip_addr != service.ip_addr ||
+               port != service.port;
     }
 
-    Service& operator=(const Service& service) {
+    Service &operator=(const Service &service) {
         if (this == &service) {
             return *this;
         }
@@ -111,7 +106,8 @@ struct Service {
 
     template <typename H>
     friend H AbslHashValue(H h, const Service &service) {
-        return H::combine(std::move(h), service.mac_addr, service.ip_addr, service.port);
+        return H::combine(std::move(h), service.mac_addr, service.ip_addr,
+                          service.port);
     }
 };
 
@@ -152,8 +148,10 @@ class ServicePair {
             src_service_ = {src_mac_, src_addr_, src_port_};
             dst_service_ = {dst_mac_, dst_addr_, dst_port_};
 
-            l_service_ = src_service_ < dst_service_ ? src_service_ : dst_service_;
-            r_service_ = dst_service_ < src_service_ ? dst_service_ : src_service_;
+            l_service_ =
+                src_service_ < dst_service_ ? src_service_ : dst_service_;
+            r_service_ =
+                dst_service_ < src_service_ ? dst_service_ : src_service_;
 
             if (dot1q_pdu_ptr_ = eth_pdu_ptr_->find_pdu<Tins::Dot1Q>()) {
                 vlan_id_ = dot1q_pdu_ptr_->id();
@@ -161,57 +159,46 @@ class ServicePair {
         }
     }
 
-    ServicePair(Service& source, Service& dest, uint8_t vlan, Tins::Constants::IP::e transport)
-    : src_service_(source),
-      dst_service_(dest),
-      l_service_(src_service_),
-      r_service_(dst_service_),
-      vlan_id_(vlan),
-      transport_proto_(transport) {}
+    ServicePair(Service &source, Service &dest, uint8_t vlan,
+                Tins::Constants::IP::e transport)
+        : src_service_(source), dst_service_(dest), l_service_(src_service_),
+          r_service_(dst_service_), vlan_id_(vlan),
+          transport_proto_(transport) {}
 
     ServicePair() = default;
-    ServicePair(const ServicePair& pair) = default;
+    ServicePair(const ServicePair &pair) = default;
 
-    Service l_service() const {
-        return l_service_;
-    }
+    Service l_service() const { return l_service_; }
 
-    Service r_service() const {
-        return r_service_;
-    }
+    Service r_service() const { return r_service_; }
 
     const Tins::Constants::IP::e transport_protocol() const {
         return transport_proto_;
     }
 
-    uint8_t vlan_id() const {
-        return vlan_id_;
-    }
+    uint8_t vlan_id() const { return vlan_id_; }
 
-    Service src_service() const {
-        return src_service_;
-    }
+    Service src_service() const { return src_service_; }
 
-    Service dst_service() const {
-        return dst_service_;
-    }
+    Service dst_service() const { return dst_service_; }
 
     template <typename H>
     friend H AbslHashValue(H h, const ServicePair &pair) {
-        return H::combine(std::move(h), pair.l_service_, pair.r_service_, pair.vlan_id_, pair.transport_proto_);
+        return H::combine(std::move(h), pair.l_service_, pair.r_service_,
+                          pair.vlan_id_, pair.transport_proto_);
     }
 
     operator bool() const {
-        return eth_pdu_ptr_ && (ip_pdu_ptr_ || ipv6_pdu_ptr_) && (tcp_pdu_ptr_ || udp_pdu_ptr_);
+        return eth_pdu_ptr_ && (ip_pdu_ptr_ || ipv6_pdu_ptr_) &&
+               (tcp_pdu_ptr_ || udp_pdu_ptr_);
     }
 
     bool operator==(ServicePair &pair) const {
-        return (l_service_ == pair.l_service()) && (r_service_ == pair.r_service());
+        return (l_service_ == pair.l_service()) &&
+               (r_service_ == pair.r_service());
     }
 
-    bool operator!=(ServicePair &pair) const {
-        return !(*this)==pair;
-    }
+    bool operator!=(ServicePair &pair) const { return !(*this) == pair; }
 
     // ServicePair& operator=(const ServicePair& pair) {
     //     if (this == &pair) {
@@ -231,11 +218,11 @@ class ServicePair {
     // Service r_service_{dst_service_};
     MacAddress src_mac_;
     MacAddress dst_mac_;
-    Tins::EthernetII* eth_pdu_ptr_{nullptr};
-    Tins::TCP* tcp_pdu_ptr_{nullptr};
-    Tins::UDP* udp_pdu_ptr_{nullptr};
-    Tins::IPv6* ipv6_pdu_ptr_{nullptr};
-    Tins::IP* ip_pdu_ptr_{nullptr};
+    Tins::EthernetII *eth_pdu_ptr_{nullptr};
+    Tins::TCP *tcp_pdu_ptr_{nullptr};
+    Tins::UDP *udp_pdu_ptr_{nullptr};
+    Tins::IPv6 *ipv6_pdu_ptr_{nullptr};
+    Tins::IP *ip_pdu_ptr_{nullptr};
     IpAddress src_addr_;
     IpAddress dst_addr_;
     uint16_t src_port_;
@@ -243,7 +230,7 @@ class ServicePair {
     Tins::Constants::Ethernet::e ip_version_;
     // uint8_t vlan_id_;
     // Tins::Constants::IP::e transport_proto_;
-    Tins::Dot1Q* dot1q_pdu_ptr_{nullptr};
+    Tins::Dot1Q *dot1q_pdu_ptr_{nullptr};
 };
 
 } // end namespace Net

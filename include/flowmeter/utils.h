@@ -3,9 +3,9 @@
 
 #include "tins/packet.h"
 
-double get_packet_timestamp(const Tins::Packet& packet) {
+double get_packet_timestamp(const Tins::Packet &packet) {
     return static_cast<double>(packet.timestamp().seconds()) /
-        static_cast<double>(packet.timestamp().microseconds());
+           static_cast<double>(packet.timestamp().microseconds());
 }
 
 #endif

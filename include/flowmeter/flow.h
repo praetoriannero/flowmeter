@@ -1,16 +1,16 @@
 #ifndef FLOWMETER_FLOW_H
 #define FLOWMETER_FLOW_H
 
-#include <cstdint>
-#include <string_view>
 #include "tins/hw_address.h"
-#include "tins/ip_address.h"
-#include "tins/ipv6_address.h"
 #include "tins/ip.h"
+#include "tins/ip_address.h"
 #include "tins/ipv6.h"
+#include "tins/ipv6_address.h"
 #include "tins/packet.h"
 #include "tins/tcp.h"
 #include "tins/udp.h"
+#include <cstdint>
+#include <string_view>
 
 #include "flowmeter/service.h"
 #include "flowmeter/statistic.h"
@@ -18,35 +18,36 @@
 
 namespace Net {
 
-enum ExpirationCode { UNINITIALIZED, ALIVE, ACTIVE_TIMEOUT, IDLE_TIMEOUT, USER_SPECIFIED };
+enum ExpirationCode {
+    UNINITIALIZED,
+    ALIVE,
+    ACTIVE_TIMEOUT,
+    IDLE_TIMEOUT,
+    USER_SPECIFIED
+};
 
 struct FlowKey {
-    Service l_service;  // "left" service, less than r_service
-    Service r_service;  // "right" service, greather than l_service
+    Service l_service; // "left" service, less than r_service
+    Service r_service; // "right" service, greather than l_service
     uint8_t vlan_id;
     uint8_t transport_proto;
 
     FlowKey(ServicePair &pair, const uint8_t vlan, const uint8_t protocol)
-    : l_service(pair.l_service()),
-      r_service(pair.r_service()),
-      vlan_id(vlan),
-      transport_proto(protocol) {}
+        : l_service(pair.l_service()), r_service(pair.r_service()),
+          vlan_id(vlan), transport_proto(protocol) {}
 
     template <typename H>
     friend H AbslHashValue(H h, const FlowKey &key) {
-        return H::combine(std::move(h), key.l_service, key.r_service, key.vlan_id, key.transport_proto);
+        return H::combine(std::move(h), key.l_service, key.r_service,
+                          key.vlan_id, key.transport_proto);
     }
 
     bool operator==(const FlowKey &key) {
-        return l_service == key.l_service &&
-            r_service == key.r_service &&
-            vlan_id == key.vlan_id &&
-            transport_proto == key.transport_proto;
+        return l_service == key.l_service && r_service == key.r_service &&
+               vlan_id == key.vlan_id && transport_proto == key.transport_proto;
     }
 
-    bool operator!=(const FlowKey &key) {
-        return !(operator==(key));
-    }
+    bool operator!=(const FlowKey &key) { return !(operator==(key)); }
 };
 
 struct Flow {
@@ -57,8 +58,8 @@ struct Flow {
     double duration_ms = 0;
     uint64_t pkt_count = 0;
     uint64_t byte_count = 0;
-    Statistic<uint64_t> packet_size{"ps"};   // packet size
-    Statistic<double> packet_iat{"piat"};    // packet inter-arrival time
+    Statistic<uint64_t> packet_size{"ps"}; // packet size
+    Statistic<double> packet_iat{"piat"};  // packet inter-arrival time
     uint64_t syn_count = 0;
     uint64_t cwr_count = 0;
     uint64_t ece_count = 0;
@@ -68,21 +69,24 @@ struct Flow {
     uint64_t rst_count = 0;
     uint64_t fin_count = 0;
 
-    Flow(const std::string flow_direction, const Tins::Constants::IP::e transport_protocol)
-    : direction(flow_direction),
-      transport_proto(transport_protocol) {}
+    Flow(const std::string flow_direction,
+         const Tins::Constants::IP::e transport_protocol)
+        : direction(flow_direction), transport_proto(transport_protocol) {}
 
-    Flow(const Flow& flow) = default;
+    Flow(const Flow &flow) = default;
 
     void update(const Tins::Packet &packet) {
         auto pkt_timestamp = get_packet_timestamp(packet);
         pkt_count++;
 
-        first_seen_ms = pkt_timestamp < first_seen_ms ? pkt_timestamp : first_seen_ms;
+        first_seen_ms =
+            pkt_timestamp < first_seen_ms ? pkt_timestamp : first_seen_ms;
         auto tmp_last_seen_ms = last_seen_ms;
-        last_seen_ms = pkt_timestamp > last_seen_ms ? pkt_timestamp : last_seen_ms;
+        last_seen_ms =
+            pkt_timestamp > last_seen_ms ? pkt_timestamp : last_seen_ms;
 
-        byte_count += packet.pdu()->size();;
+        byte_count += packet.pdu()->size();
+        ;
 
         packet_size.update(byte_count);
 
@@ -92,41 +96,37 @@ struct Flow {
         }
 
         if (transport_proto == Tins::Constants::IP::e::PROTO_TCP) {
-            auto* tcp_pdu = packet.pdu()->find_pdu<Tins::TCP>();
-            if (tcp_pdu->get_flag(Tins::TCP::SYN)) { 
+            auto *tcp_pdu = packet.pdu()->find_pdu<Tins::TCP>();
+            if (tcp_pdu->get_flag(Tins::TCP::SYN)) {
                 syn_count++;
             }
-            if (tcp_pdu->get_flag(Tins::TCP::CWR)) { 
+            if (tcp_pdu->get_flag(Tins::TCP::CWR)) {
                 cwr_count++;
             }
-            if (tcp_pdu->get_flag(Tins::TCP::ECE)) { 
+            if (tcp_pdu->get_flag(Tins::TCP::ECE)) {
                 ece_count++;
             }
-            if (tcp_pdu->get_flag(Tins::TCP::URG)) { 
+            if (tcp_pdu->get_flag(Tins::TCP::URG)) {
                 urg_count++;
             }
-            if (tcp_pdu->get_flag(Tins::TCP::ACK)) { 
+            if (tcp_pdu->get_flag(Tins::TCP::ACK)) {
                 ack_count++;
             }
-            if (tcp_pdu->get_flag(Tins::TCP::PSH)) { 
+            if (tcp_pdu->get_flag(Tins::TCP::PSH)) {
                 psh_count++;
             }
-            if (tcp_pdu->get_flag(Tins::TCP::RST)) { 
+            if (tcp_pdu->get_flag(Tins::TCP::RST)) {
                 rst_count++;
             }
-            if (tcp_pdu->get_flag(Tins::TCP::FIN)) { 
+            if (tcp_pdu->get_flag(Tins::TCP::FIN)) {
                 fin_count++;
             }
         }
     }
 
-    void finalize() {
-        duration_ms = last_seen_ms - first_seen_ms;
-    }
+    void finalize() { duration_ms = last_seen_ms - first_seen_ms; }
 
-    std::string to_string() const {
-        return "NOT IMPLEMENTED";
-    }
+    std::string to_string() const { return "NOT IMPLEMENTED"; }
 };
 
 struct NetworkFlow {
@@ -155,14 +155,14 @@ struct NetworkFlow {
     Flow dst_to_src;
     Flow bidirectional;
 
-    NetworkFlow(const ServicePair& pair)
+    NetworkFlow(const ServicePair &pair)
         : service_pair(pair),
           src_to_dst("src_to_dst", service_pair.transport_protocol()),
           dst_to_src("dst_to_src", service_pair.transport_protocol()),
           bidirectional("bidirectional", service_pair.transport_protocol()),
           exp_code(ExpirationCode::ALIVE) {}
 
-    NetworkFlow(const NetworkFlow& net_flow) = default;
+    NetworkFlow(const NetworkFlow &net_flow) = default;
 
     void update(Tins::Packet &pkt, ServicePair &pair) {
         bidirectional.update(pkt);
@@ -174,10 +174,7 @@ struct NetworkFlow {
         }
     }
 
-    double last_update_ts() const {
-        return bidirectional.last_seen_ms;
-    }
-
+    double last_update_ts() const { return bidirectional.last_seen_ms; }
 };
 
 } // end namespace Net

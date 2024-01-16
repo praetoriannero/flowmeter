@@ -1,12 +1,12 @@
 #ifndef FLOWMETER_TINS_EXT_H
 #define FLOWMETER_TINS_EXT_H
 
+#include "tins/ip_address.h"
+#include "tins/ipv6_address.h"
 #include <array>
 #include <cstdint>
 #include <cstring>
 #include <vector>
-#include "tins/ip_address.h"
-#include "tins/ipv6_address.h"
 
 namespace Net {
 
