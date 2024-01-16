@@ -21,14 +21,6 @@ int main(int argc, char **argv) {
     app.add_option("-i,--input-path", pcap_path, "Path to .pcap/.pcapng file");
     app.add_option("-o,--output-path", csv_path, "Path to output .csv file");
 
-    uint64_t init_val = 4;
-    std::string feature_name = "test";
-    auto stat = Net::Statistic<uint64_t>(feature_name);
-    uint64_t update_val = 5;
-    stat.update(update_val);
-    stat.update(update_val);
-    std::cout << stat.to_string() << std::endl;
-
     CLI11_PARSE(app, argc, argv);
 
     Net::Meter meter(pcap_path);

@@ -17,7 +17,7 @@
 
 namespace Net {
 
-enum ExpirationCode { ALIVE, ACTIVE_TIMEOUT, IDLE_TIMEOUT, USER_SPECIFIED };
+enum ExpirationCode { UNINITIALIZED, ALIVE, ACTIVE_TIMEOUT, IDLE_TIMEOUT, USER_SPECIFIED };
 
 struct FlowKey {
     Service l_service;  // "left" service, less than r_service
@@ -48,8 +48,8 @@ struct FlowKey {
     }
 };
 
-template <typename TransportProto>
 struct Flow {
+    const Tins::Constants::IP::e transport_proto;
     std::string direction;
     double first_seen_ms = 0;
     double last_seen_ms = 0;
@@ -58,7 +58,6 @@ struct Flow {
     uint64_t byte_count = 0;
     Statistic<uint64_t> packet_size{"ps"};   // packet size
     Statistic<double> packet_iat{"piat"};    // packet inter-arrival time
-    // Statistic<double> packet_entropy{"entropy", 0.0};    // Shannon entropy of packet; maybe too slow??
     uint64_t syn_count = 0;
     uint64_t cwr_count = 0;
     uint64_t ece_count = 0;
@@ -68,7 +67,9 @@ struct Flow {
     uint64_t rst_count = 0;
     uint64_t fin_count = 0;
 
-    Flow(const std::string direction_) : direction(direction_) {}
+    Flow(const std::string flow_direction, const Tins::Constants::IP::e transport_protocol)
+    : direction(flow_direction),
+      transport_proto(transport_protocol) {}
 
     void update(const Tins::Packet &packet) {
         auto pkt_timestamp = get_packet_timestamp(packet);
@@ -77,7 +78,7 @@ struct Flow {
         first_seen_ms = pkt_timestamp < first_seen_ms ? pkt_timestamp : first_seen_ms;
         auto tmp_last_seen_ms = last_seen_ms;
         last_seen_ms = pkt_timestamp > last_seen_ms ? pkt_timestamp : last_seen_ms;
-        
+
         byte_count += packet.pdu()->size();;
 
         packet_size.update(byte_count);
@@ -87,7 +88,7 @@ struct Flow {
             packet_iat.update(time_delta);
         }
 
-        if constexpr(std::is_same<TransportProto, Tins::TCP>()) {
+        if (transport_proto == Tins::Constants::IP::e::PROTO_TCP) {
             auto* tcp_pdu = packet.pdu()->find_pdu<Tins::TCP>();
             if (tcp_pdu->get_flag(Tins::TCP::SYN)) { 
                 syn_count++;
@@ -125,29 +126,19 @@ struct Flow {
     }
 };
 
-template <typename IpVersion, typename TransportProto>
 struct NetworkFlow {
-    NetworkFlow(int64_t active_timeout_val, int64_t idle_timeout_val)
-        : active_timeout(active_timeout_val), idle_timeout(idle_timeout_val) {}
-
-    void update(Tins::Packet &pkt) {
-
-    }
-
-    // void add_field(std::string field_name, )
-
-    // auto flow_feature_count = 0;
+    ServicePair service_pair{};
 
     int64_t init_id{};
     int64_t sub_init_id{};
 
-    ExpirationCode exp_code{};
+    ExpirationCode exp_code{ExpirationCode::UNINITIALIZED};
 
     std::string src_mac{};
     std::string dst_mac{};
 
-    IpVersion src_ip{};
-    IpVersion dst_ip{};
+    std::string src_ip{};
+    std::string dst_ip{};
 
     uint16_t ip_version{};
 
@@ -155,16 +146,29 @@ struct NetworkFlow {
     uint16_t dst_port{};
 
     uint16_t vlan_id{};
-    uint16_t transport_proto{};
+    Tins::Constants::IP::e transport_proto{};
 
-    int64_t active_timeout{};
-    int64_t idle_timeout{};
+    Flow src_to_dst;
+    Flow dst_to_src;
+    Flow bidirectional;
 
-    Flow<TransportProto> src_to_dst;
-    Flow<TransportProto> dst_to_src;
-    Flow<TransportProto> bidirectional;
+    NetworkFlow(const ServicePair& pair)
+        : service_pair(pair),
+          src_to_dst("src_to_dst", service_pair.transport_protocol()),
+          dst_to_src("dst_to_src", service_pair.transport_protocol()),
+          bidirectional("bidirectional", service_pair.transport_protocol()) {}
+
+    void update(Tins::Packet &pkt, ServicePair &pair) {
+        bidirectional.update(pkt);
+
+        if (pair.src_service() == service_pair.src_service()) {
+            src_to_dst.update(pkt);
+        } else {
+            dst_to_src.update(pkt);
+        }
+    }
 };
 
-}
+} // end namespace Net
 
 #endif

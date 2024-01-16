@@ -36,20 +36,20 @@ class Meter {
         while (packet_ = sniffer_.next_packet()) {
             pkt_cnt++;
 
-            eth_pdu_ = packet_.pdu()->find_pdu<Tins::EthernetII>();
-            if (!eth_pdu_) {
+            auto pkt_ts_ms = get_packet_timestamp(packet_);
+
+            ServicePair services_{packet_};
+            if (!services_) {
                 continue;
             }
 
-            // get flow key
+            NetworkFlow net_flow_{services_};
 
-            // 
         }
         auto end_time = high_resolution_clock::now();
         auto nanosecs = std::chrono::duration_cast<std::chrono::nanoseconds>(
                             end_time - start_time)
                             .count();
-        std::cout << nanosecs << std::endl;
         seconds_ = nanosecs / 1'000'000'000.0;
         pkts_per_sec_ = pkt_cnt / seconds_;
         std::cout << "Read " << pkt_cnt << " packets in " << seconds_
@@ -67,9 +67,10 @@ class Meter {
     Tins::Packet packet_;
     Tins::FileSniffer sniffer_;
     std::string pcap_path_;
-    Tins::EthernetII* eth_pdu_;
+    ServicePair services_;
     double seconds_;
     double pkts_per_sec_;
+    // NetworkFlow net_flow_;
     // TO-DO: add types to FlowKey
     // TO-DO: add custom hashing function for FlowKey
     // std::map<FlowKey, Flow> flow_cache_;
