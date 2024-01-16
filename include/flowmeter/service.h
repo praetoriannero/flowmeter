@@ -96,10 +96,34 @@ struct Service {
             ip_addr != service.ip_addr ||
             port != service.port;
     }
+
+    Service& operator=(const Service& service) {
+        if (this == &service) {
+            return *this;
+        }
+
+        this->mac_addr = service.mac_addr;
+        this->ip_addr = service.ip_addr;
+        this->port = service.port;
+
+        return *this;
+    }
+
+    template <typename H>
+    friend H AbslHashValue(H h, const Service &service) {
+        return H::combine(std::move(h), service.mac_addr, service.ip_addr, service.port);
+    }
 };
 
 class ServicePair {
   public:
+    Service src_service_;
+    Service dst_service_;
+    Service l_service_{src_service_};
+    Service r_service_{dst_service_};
+    uint8_t vlan_id_;
+    Tins::Constants::IP::e transport_proto_;
+
     ServicePair(Tins::Packet &pkt) {
         if (eth_pdu_ptr_ = pkt.pdu()->find_pdu<Tins::EthernetII>()) {
             src_mac_ = eth_pdu_ptr_->src_addr();
@@ -137,7 +161,16 @@ class ServicePair {
         }
     }
 
+    ServicePair(Service& source, Service& dest, uint8_t vlan, Tins::Constants::IP::e transport)
+    : src_service_(source),
+      dst_service_(dest),
+      l_service_(src_service_),
+      r_service_(dst_service_),
+      vlan_id_(vlan),
+      transport_proto_(transport) {}
+
     ServicePair() = default;
+    ServicePair(const ServicePair& pair) = default;
 
     Service l_service() const {
         return l_service_;
@@ -151,12 +184,21 @@ class ServicePair {
         return transport_proto_;
     }
 
+    uint8_t vlan_id() const {
+        return vlan_id_;
+    }
+
     Service src_service() const {
         return src_service_;
     }
 
     Service dst_service() const {
         return dst_service_;
+    }
+
+    template <typename H>
+    friend H AbslHashValue(H h, const ServicePair &pair) {
+        return H::combine(std::move(h), pair.l_service_, pair.r_service_, pair.vlan_id_, pair.transport_proto_);
     }
 
     operator bool() const {
@@ -171,11 +213,22 @@ class ServicePair {
         return !(*this)==pair;
     }
 
+    // ServicePair& operator=(const ServicePair& pair) {
+    //     if (this == &pair) {
+    //         return *this;
+    //     }
+
+    //     this->src_service_ = pair.src_service_;
+    //     this->dst_service_ = pair.dst_service_;
+    //     this->l_service_ = pair.l_service_;
+    //     this->r_service_ = pair.r_service_;
+    //     this->vlan_id_ = pair.vlan_id_;
+    //     this->transport_proto_ = pair.transport_proto_;
+    // }
+
   private:
-    Service src_service_;
-    Service dst_service_;
-    Service& l_service_{src_service_};
-    Service& r_service_{dst_service_};
+    // Service l_service_{src_service_};
+    // Service r_service_{dst_service_};
     MacAddress src_mac_;
     MacAddress dst_mac_;
     Tins::EthernetII* eth_pdu_ptr_{nullptr};
@@ -188,8 +241,8 @@ class ServicePair {
     uint16_t src_port_;
     uint16_t dst_port_;
     Tins::Constants::Ethernet::e ip_version_;
-    uint8_t vlan_id_;
-    Tins::Constants::IP::e transport_proto_;
+    // uint8_t vlan_id_;
+    // Tins::Constants::IP::e transport_proto_;
     Tins::Dot1Q* dot1q_pdu_ptr_{nullptr};
 };
 

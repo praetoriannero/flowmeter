@@ -1,6 +1,8 @@
 #ifndef FLOWMETER_FLOW_H
 #define FLOWMETER_FLOW_H
 
+#include <cstdint>
+#include <string_view>
 #include "tins/hw_address.h"
 #include "tins/ip_address.h"
 #include "tins/ipv6_address.h"
@@ -9,7 +11,6 @@
 #include "tins/packet.h"
 #include "tins/tcp.h"
 #include "tins/udp.h"
-#include <cstdint>
 
 #include "flowmeter/service.h"
 #include "flowmeter/statistic.h"
@@ -70,6 +71,8 @@ struct Flow {
     Flow(const std::string flow_direction, const Tins::Constants::IP::e transport_protocol)
     : direction(flow_direction),
       transport_proto(transport_protocol) {}
+
+    Flow(const Flow& flow) = default;
 
     void update(const Tins::Packet &packet) {
         auto pkt_timestamp = get_packet_timestamp(packet);
@@ -156,7 +159,10 @@ struct NetworkFlow {
         : service_pair(pair),
           src_to_dst("src_to_dst", service_pair.transport_protocol()),
           dst_to_src("dst_to_src", service_pair.transport_protocol()),
-          bidirectional("bidirectional", service_pair.transport_protocol()) {}
+          bidirectional("bidirectional", service_pair.transport_protocol()),
+          exp_code(ExpirationCode::ALIVE) {}
+
+    NetworkFlow(const NetworkFlow& net_flow) = default;
 
     void update(Tins::Packet &pkt, ServicePair &pair) {
         bidirectional.update(pkt);
@@ -167,6 +173,11 @@ struct NetworkFlow {
             dst_to_src.update(pkt);
         }
     }
+
+    double last_update_ts() const {
+        return bidirectional.last_seen_ms;
+    }
+
 };
 
 } // end namespace Net

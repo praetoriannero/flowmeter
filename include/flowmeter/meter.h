@@ -10,7 +10,7 @@
 #include "tins/sniffer.h"
 #include "tins/tcp.h"
 #include "tins/udp.h"
-#include "absl/container/node_hash_map.h"
+#include "absl/container/flat_hash_map.h"
 
 #include "flowmeter/constants.h"
 #include "flowmeter/flow.h"
@@ -32,27 +32,54 @@ class Meter {
     void run() {
         std::cout << "Processing " << pcap_path_ << std::endl;
         auto start_time = high_resolution_clock::now();
-        auto pkt_cnt = 0;
+        auto pkt_count = 0;
+        double last_packet_ts;
         while (packet_ = sniffer_.next_packet()) {
-            pkt_cnt++;
+            auto packet_ts = get_packet_timestamp(packet_);
+            std::cout << pkt_count << std::endl;
 
-            auto pkt_ts_ms = get_packet_timestamp(packet_);
+            if (!pkt_count) {
+                last_packet_ts = packet_ts;
+            }
+
+            pkt_count++;
+
+            if (flow_cache_.size()) {
+                auto check_timeout = [packet_ts](auto& it) {
+                    auto time_since_start = packet_ts - it.second.last_update_ts();
+                    auto time_since_update = packet_ts - it.second.last_update_ts();
+                    if (time_since_start >= active_timeout_) {
+                        it.second.exp_code = ExpirationCode::ACTIVE_TIMEOUT;
+                        return true;
+                    } else if (time_since_update >= idle_timeout_) {
+                        it.second.exp_code = ExpirationCode::IDLE_TIMEOUT;
+                        return true;
+                    }
+
+                    return false;
+                };
+
+                absl::erase_if(flow_cache_, check_timeout);
+            }
 
             ServicePair services_{packet_};
             if (!services_) {
                 continue;
             }
 
-            NetworkFlow net_flow_{services_};
+            auto [it, success] = flow_cache_.emplace(services_, NetworkFlow(services_));
 
+            it->second.update(packet_, services_);
+
+            last_packet_ts = packet_ts;
         }
         auto end_time = high_resolution_clock::now();
         auto nanosecs = std::chrono::duration_cast<std::chrono::nanoseconds>(
                             end_time - start_time)
                             .count();
         seconds_ = nanosecs / 1'000'000'000.0;
-        pkts_per_sec_ = pkt_cnt / seconds_;
-        std::cout << "Read " << pkt_cnt << " packets in " << seconds_
+        pkts_per_sec_ = pkt_count / seconds_;
+        std::cout << "Read " << pkt_count << " packets in " << seconds_
                   << " seconds" << std::endl;
         std::cout << std::setprecision(MAX_DOUBLE_PRECISION) << pkts_per_sec_
                   << " pkts/sec" << std::endl;
@@ -67,13 +94,12 @@ class Meter {
     Tins::Packet packet_;
     Tins::FileSniffer sniffer_;
     std::string pcap_path_;
-    ServicePair services_;
+    // ServicePair* services_{nullptr};
     double seconds_;
     double pkts_per_sec_;
-    // NetworkFlow net_flow_;
-    // TO-DO: add types to FlowKey
-    // TO-DO: add custom hashing function for FlowKey
-    // std::map<FlowKey, Flow> flow_cache_;
+    static constexpr double active_timeout_{120};
+    static constexpr double idle_timeout_{60};
+    absl::flat_hash_map<ServicePair, NetworkFlow> flow_cache_;
 };
 
 } // end namespace Net
