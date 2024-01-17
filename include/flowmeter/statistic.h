@@ -20,7 +20,7 @@ struct Statistic {
 
     Statistic(std::string stat_name) : name(stat_name) {}
 
-    void update(T &val) {
+    inline void update(T &val) {
         count++;
         min = val < min ? val : min;
         max = val > max ? val : max;

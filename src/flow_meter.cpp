@@ -26,6 +26,5 @@ int main(int argc, char **argv) {
     Net::Meter meter(pcap_path);
 
     meter.run();
-    std::cout << "Done" << std::endl;
 }
 

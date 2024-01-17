@@ -48,9 +48,10 @@ class Meter {
                 if (flow_cache_.size()) {
                     auto check_timeout = [packet_ts](auto &it) {
                         auto time_since_start =
-                            packet_ts - it.second.last_update_ts();
+                            packet_ts - it.second.bidirectional.last_seen_ms;
                         auto time_since_update =
-                            packet_ts - it.second.last_update_ts();
+                            packet_ts - it.second.bidirectional.last_seen_ms;
+
                         if (time_since_start >= active_timeout_) {
                             it.second.exp_code = ExpirationCode::ACTIVE_TIMEOUT;
                             return true;
@@ -74,10 +75,12 @@ class Meter {
             }
             auto [it, success] = flow_cache_.emplace(services_, NetworkFlow(services_));
 
-            it->second.update(packet_, services_);
+            it->second.update(packet_, services_, packet_ts);
 
             last_packet_ts = packet_ts;
         }
+
+        // Display meter summary
         auto end_time = high_resolution_clock::now();
         auto nanosecs = std::chrono::duration_cast<std::chrono::nanoseconds>(
                             end_time - start_time)
@@ -98,7 +101,7 @@ class Meter {
     double pkts_per_sec_;
     static constexpr double active_timeout_{120};
     static constexpr double idle_timeout_{60};
-    static constexpr double status_increment{5};
+    static constexpr double status_increment{1};
     absl::node_hash_map<ServicePair, NetworkFlow> flow_cache_;
 };
 

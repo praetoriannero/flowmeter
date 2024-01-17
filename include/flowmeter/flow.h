@@ -26,33 +26,9 @@ enum ExpirationCode {
     USER_SPECIFIED
 };
 
-struct FlowKey {
-    Service l_service; // "left" service, less than r_service
-    Service r_service; // "right" service, greather than l_service
-    uint8_t vlan_id;
-    uint8_t transport_proto;
-
-    FlowKey(ServicePair &pair, const uint8_t vlan, const uint8_t protocol)
-        : l_service(pair.l_service()), r_service(pair.r_service()),
-          vlan_id(vlan), transport_proto(protocol) {}
-
-    template <typename H>
-    friend H AbslHashValue(H h, const FlowKey &key) {
-        return H::combine(std::move(h), key.l_service, key.r_service,
-                          key.vlan_id, key.transport_proto);
-    }
-
-    bool operator==(const FlowKey &key) {
-        return l_service == key.l_service && r_service == key.r_service &&
-               vlan_id == key.vlan_id && transport_proto == key.transport_proto;
-    }
-
-    bool operator!=(const FlowKey &key) { return !(operator==(key)); }
-};
-
 struct Flow {
     const Tins::Constants::IP::e transport_proto{};
-    std::string direction;
+    std::string direction{"DEFAULT"};
     double first_seen_ms = 0;
     double last_seen_ms = 0;
     double duration_ms = 0;
@@ -69,14 +45,12 @@ struct Flow {
     uint64_t rst_count = 0;
     uint64_t fin_count = 0;
 
-    Flow(const std::string flow_direction,
-         const Tins::Constants::IP::e transport_protocol)
-        : direction(flow_direction), transport_proto(transport_protocol) {}
+    Flow(const Tins::Constants::IP::e transport_protocol)
+        : transport_proto(transport_protocol) {}
 
     Flow(const Flow &flow) = default;
 
-    void update(const Tins::Packet &packet) {
-        auto pkt_timestamp = get_packet_timestamp(packet);
+    inline void update(const Tins::Packet &packet, const double &pkt_timestamp) {
         pkt_count++;
 
         first_seen_ms =
@@ -124,53 +98,68 @@ struct Flow {
         }
     }
 
-    void finalize() { duration_ms = last_seen_ms - first_seen_ms; }
+    inline void finalize() { duration_ms = last_seen_ms - first_seen_ms; }
 
     std::string to_string() const { return "NOT IMPLEMENTED"; }
+};
+
+struct Src2DstFlow : Flow {
+    std::string direction{"src_to_dst"};
+    using Flow::Flow;
+};
+
+struct Dst2SrcFlow : Flow {
+    std::string direction{"dst_to_src"};
+    using Flow::Flow;
+};
+
+struct BidirFlow : Flow {
+    std::string direction{"bidirectional"};
+    using Flow::Flow;
 };
 
 struct NetworkFlow {
     ServicePair service_pair{};
 
-    int64_t init_id{};
-    int64_t sub_init_id{};
+    // int64_t init_id{};
+    // int64_t sub_init_id{};
 
     ExpirationCode exp_code{ExpirationCode::UNINITIALIZED};
 
-    std::string src_mac{};
-    std::string dst_mac{};
+    // std::string src_mac{};
+    // std::string dst_mac{};
 
-    std::string src_ip{};
-    std::string dst_ip{};
+    // std::string src_ip{};
+    // std::string dst_ip{};
 
-    uint16_t ip_version{};
+    // uint16_t ip_version{};
 
-    uint16_t src_port{};
-    uint16_t dst_port{};
+    // uint16_t src_port{};
+    // uint16_t dst_port{};
 
-    uint16_t vlan_id{};
-    Tins::Constants::IP::e transport_proto{};
+    // uint16_t vlan_id{};
+    // Tins::Constants::IP::e transport_proto{};
 
-    Flow src_to_dst;
-    Flow dst_to_src;
-    Flow bidirectional;
+    Src2DstFlow src_to_dst;
+    Dst2SrcFlow dst_to_src;
+    BidirFlow bidirectional;
 
     NetworkFlow(const ServicePair &pair)
         : service_pair(pair),
-          src_to_dst("src_to_dst", pair.transport_proto_),
-          dst_to_src("dst_to_src", pair.transport_proto_),
-          bidirectional("bidirectional", pair.transport_proto_),
+          src_to_dst(pair.transport_proto),
+          dst_to_src(pair.transport_proto),
+          bidirectional(pair.transport_proto),
           exp_code(ExpirationCode::ALIVE) {}
 
     NetworkFlow(const NetworkFlow &net_flow) = default;
 
-    void update(Tins::Packet &pkt, ServicePair &pair) {
-        bidirectional.update(pkt);
+    inline void update(Tins::Packet &pkt, ServicePair &pair, double &timestamp) {
+        bidirectional.update(pkt, timestamp);
 
-        if (pair.src_service() == service_pair.src_service()) {
-            src_to_dst.update(pkt);
+        if (pair.src_service == service_pair.src_service) {
+            src_to_dst.update(pkt, timestamp);
         } else {
-            dst_to_src.update(pkt);
+            dst_to_src.update(pkt, timestamp);
         }
     }
 
