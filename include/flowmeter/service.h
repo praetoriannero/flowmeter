@@ -113,12 +113,12 @@ struct Service {
 
 class ServicePair {
   public:
-    Service src_service_;
-    Service dst_service_;
+    Service src_service_{};
+    Service dst_service_{};
     Service l_service_{src_service_};
     Service r_service_{dst_service_};
-    uint8_t vlan_id_;
-    Tins::Constants::IP::e transport_proto_;
+    uint8_t vlan_id_{};
+    Tins::Constants::IP::e transport_proto_{};
 
     ServicePair(Tins::Packet &pkt) {
         if (eth_pdu_ptr_ = pkt.pdu()->find_pdu<Tins::EthernetII>()) {
@@ -126,12 +126,12 @@ class ServicePair {
             dst_mac_ = eth_pdu_ptr_->dst_addr();
 
             if (ipv6_pdu_ptr_ = eth_pdu_ptr_->find_pdu<Tins::IPv6>()) {
-                src_addr_ = to_bytes(ipv6_pdu_ptr_->src_addr());
-                dst_addr_ = to_bytes(ipv6_pdu_ptr_->dst_addr());
+                to_bytes(ipv6_pdu_ptr_->src_addr(), src_addr_);
+                to_bytes(ipv6_pdu_ptr_->dst_addr(), dst_addr_);
                 ip_version_ = Tins::Constants::Ethernet::e::IP;
             } else if (ip_pdu_ptr_ = eth_pdu_ptr_->find_pdu<Tins::IP>()) {
-                src_addr_ = to_bytes(ip_pdu_ptr_->src_addr());
-                dst_addr_ = to_bytes(ip_pdu_ptr_->dst_addr());
+                to_bytes(ip_pdu_ptr_->src_addr(), src_addr_);
+                to_bytes(ip_pdu_ptr_->dst_addr(), dst_addr_);
                 ip_version_ = Tins::Constants::Ethernet::e::IPV6;
             }
 
@@ -193,25 +193,14 @@ class ServicePair {
                (tcp_pdu_ptr_ || udp_pdu_ptr_);
     }
 
-    bool operator==(ServicePair &pair) const {
-        return (l_service_ == pair.l_service()) &&
-               (r_service_ == pair.r_service());
+    bool operator==(const ServicePair &pair) const {
+        return (l_service_ == pair.l_service_) &&
+               (r_service_ == pair.r_service_) &&
+               (transport_proto_ == pair.transport_proto_) &&
+               (vlan_id_ == vlan_id_);
     }
 
-    bool operator!=(ServicePair &pair) const { return !(*this) == pair; }
-
-    // ServicePair& operator=(const ServicePair& pair) {
-    //     if (this == &pair) {
-    //         return *this;
-    //     }
-
-    //     this->src_service_ = pair.src_service_;
-    //     this->dst_service_ = pair.dst_service_;
-    //     this->l_service_ = pair.l_service_;
-    //     this->r_service_ = pair.r_service_;
-    //     this->vlan_id_ = pair.vlan_id_;
-    //     this->transport_proto_ = pair.transport_proto_;
-    // }
+    bool operator!=(const ServicePair &pair) const { return !(*this) == pair; }
 
   private:
     // Service l_service_{src_service_};
@@ -223,8 +212,8 @@ class ServicePair {
     Tins::UDP *udp_pdu_ptr_{nullptr};
     Tins::IPv6 *ipv6_pdu_ptr_{nullptr};
     Tins::IP *ip_pdu_ptr_{nullptr};
-    IpAddress src_addr_;
-    IpAddress dst_addr_;
+    IpAddress src_addr_{};
+    IpAddress dst_addr_{};
     uint16_t src_port_;
     uint16_t dst_port_;
     Tins::Constants::Ethernet::e ip_version_;

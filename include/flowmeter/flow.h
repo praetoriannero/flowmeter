@@ -51,7 +51,7 @@ struct FlowKey {
 };
 
 struct Flow {
-    const Tins::Constants::IP::e transport_proto;
+    const Tins::Constants::IP::e transport_proto{};
     std::string direction;
     double first_seen_ms = 0;
     double last_seen_ms = 0;
@@ -86,7 +86,6 @@ struct Flow {
             pkt_timestamp > last_seen_ms ? pkt_timestamp : last_seen_ms;
 
         byte_count += packet.pdu()->size();
-        ;
 
         packet_size.update(byte_count);
 
@@ -97,6 +96,7 @@ struct Flow {
 
         if (transport_proto == Tins::Constants::IP::e::PROTO_TCP) {
             auto *tcp_pdu = packet.pdu()->find_pdu<Tins::TCP>();
+
             if (tcp_pdu->get_flag(Tins::TCP::SYN)) {
                 syn_count++;
             }
@@ -157,9 +157,9 @@ struct NetworkFlow {
 
     NetworkFlow(const ServicePair &pair)
         : service_pair(pair),
-          src_to_dst("src_to_dst", service_pair.transport_protocol()),
-          dst_to_src("dst_to_src", service_pair.transport_protocol()),
-          bidirectional("bidirectional", service_pair.transport_protocol()),
+          src_to_dst("src_to_dst", pair.transport_proto_),
+          dst_to_src("dst_to_src", pair.transport_proto_),
+          bidirectional("bidirectional", pair.transport_proto_),
           exp_code(ExpirationCode::ALIVE) {}
 
     NetworkFlow(const NetworkFlow &net_flow) = default;

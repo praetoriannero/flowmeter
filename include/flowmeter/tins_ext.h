@@ -15,21 +15,17 @@ namespace Net {
 typedef std::array<uint8_t, ADDR_SIZE> IpAddress;
 typedef Tins::HWAddress<6> MacAddress;
 
-IpAddress to_bytes(Tins::IPv4Address addr) {
-    IpAddress res_array;
+void to_bytes(Tins::IPv4Address addr, IpAddress &addr_arr) {
     auto int_addr = uint32_t(addr);
-    std::memcpy(res_array.data(), &int_addr, addr.size());
-    return res_array;
+    std::memcpy(addr_arr.data(), &int_addr, 4);
 }
 
-IpAddress to_bytes(Tins::IPv6Address addr) {
-    IpAddress res_array;
+void to_bytes(Tins::IPv6Address addr, IpAddress &addr_arr) {
     auto i = 0;
     for (auto byte : addr) {
-        res_array[i] = static_cast<uint8_t>(byte);
+        addr_arr[i] = static_cast<uint8_t>(byte);
         i++;
     }
-    return res_array;
 }
 
 } // end namespace Net

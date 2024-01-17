@@ -32,43 +32,47 @@ class Meter {
         auto start_time = high_resolution_clock::now();
         auto pkt_count = 0;
         double last_packet_ts;
+        double last_check;
         while (packet_ = sniffer_.next_packet()) {
             auto packet_ts = get_packet_timestamp(packet_);
-            std::cout << pkt_count << std::endl;
 
             if (!pkt_count) {
                 last_packet_ts = packet_ts;
+                last_check = packet_ts;
             }
 
+            auto time_delta = packet_ts - last_check;
             pkt_count++;
 
-            if (flow_cache_.size()) {
-                auto check_timeout = [packet_ts](auto &it) {
-                    auto time_since_start =
-                        packet_ts - it.second.last_update_ts();
-                    auto time_since_update =
-                        packet_ts - it.second.last_update_ts();
-                    if (time_since_start >= active_timeout_) {
-                        it.second.exp_code = ExpirationCode::ACTIVE_TIMEOUT;
-                        return true;
-                    } else if (time_since_update >= idle_timeout_) {
-                        it.second.exp_code = ExpirationCode::IDLE_TIMEOUT;
-                        return true;
-                    }
+            if (time_delta > status_increment) {
+                if (flow_cache_.size()) {
+                    auto check_timeout = [packet_ts](auto &it) {
+                        auto time_since_start =
+                            packet_ts - it.second.last_update_ts();
+                        auto time_since_update =
+                            packet_ts - it.second.last_update_ts();
+                        if (time_since_start >= active_timeout_) {
+                            it.second.exp_code = ExpirationCode::ACTIVE_TIMEOUT;
+                            return true;
+                        } else if (time_since_update >= idle_timeout_) {
+                            it.second.exp_code = ExpirationCode::IDLE_TIMEOUT;
+                            return true;
+                        }
 
-                    return false;
-                };
+                        return false;
+                    };
 
-                absl::erase_if(flow_cache_, check_timeout);
+                    absl::erase_if(flow_cache_, check_timeout);
+                }
+
+                last_check = packet_ts;
             }
 
             ServicePair services_{packet_};
             if (!services_) {
                 continue;
             }
-
-            auto [it, success] =
-                flow_cache_.emplace(services_, NetworkFlow(services_));
+            auto [it, success] = flow_cache_.emplace(services_, NetworkFlow(services_));
 
             it->second.update(packet_, services_);
 
@@ -86,20 +90,15 @@ class Meter {
                   << " pkts/sec" << std::endl;
     }
 
-    void update(Tins::Packet &pkt) {
-        // extract flow key
-        // add to flow cache if not exist
-    }
-
   private:
     Tins::Packet packet_;
     Tins::FileSniffer sniffer_;
     std::string pcap_path_;
-    // ServicePair* services_{nullptr};
     double seconds_;
     double pkts_per_sec_;
     static constexpr double active_timeout_{120};
     static constexpr double idle_timeout_{60};
+    static constexpr double status_increment{5};
     absl::node_hash_map<ServicePair, NetworkFlow> flow_cache_;
 };
 
