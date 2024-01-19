@@ -121,8 +121,8 @@ struct BidirFlow : Flow {
 struct NetworkFlow {
     ServicePair service_pair{};
 
-    // int64_t init_id{};
-    // int64_t sub_init_id{};
+    int64_t init_id{};
+    int64_t sub_init_id{};
 
     ExpirationCode exp_code{ExpirationCode::UNINITIALIZED};
 
@@ -144,14 +144,23 @@ struct NetworkFlow {
     Dst2SrcFlow dst_to_src;
     BidirFlow bidirectional;
 
-    NetworkFlow(const ServicePair &pair)
+    NetworkFlow(const ServicePair &pair, const uint32_t init_id_val, const uint32_t sub_init_id_val)
         : service_pair(pair),
+          init_id(init_id_val),
+          sub_init_id(sub_init_id_val),
           src_to_dst(pair.transport_proto),
           dst_to_src(pair.transport_proto),
           bidirectional(pair.transport_proto),
           exp_code(ExpirationCode::ALIVE) {}
 
     NetworkFlow(const NetworkFlow &net_flow) = default;
+
+    // NetworkFlow& operator=(NetworkFlow &rhs) {
+    //     return rhs;
+    // };
+    NetworkFlow operator=(const NetworkFlow rhs) {
+        return rhs;
+    };
 
     inline void update(Tins::Packet &pkt, ServicePair &pair, double &timestamp) {
         bidirectional.update(pkt, timestamp);
