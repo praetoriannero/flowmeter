@@ -18,12 +18,12 @@ int main(int argc, char **argv) {
 
     std::string pcap_path;
     std::string csv_path;
-    app.add_option("-i,--input-path", pcap_path, "Path to .pcap/.pcapng file");
-    app.add_option("-o,--output-path", csv_path, "Path to output .csv file");
+    app.add_option("-i,--input-path", pcap_path, "Path to .pcap/.pcapng file")->required();
+    app.add_option("-o,--output-path", csv_path, "Path to output .csv file")->required();
 
     CLI11_PARSE(app, argc, argv);
 
-    Net::Meter meter(pcap_path);
+    Net::Meter meter(pcap_path, csv_path);
 
     meter.run();
 }

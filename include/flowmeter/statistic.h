@@ -12,13 +12,15 @@ namespace Net {
 template <typename T>
 struct Statistic {
     std::string name;
+    std::string header;
     T min = std::numeric_limits<T>::max();
     T max = std::numeric_limits<T>::min();
     T count = 0;
     double mean = 0;
     double stddev = 0;
 
-    Statistic(std::string stat_name) : name(stat_name) {}
+    Statistic(std::string header_name, std::string stat_name)
+        : header(header_name), name(stat_name) {}
 
     inline void update(T &val) {
         count++;
@@ -29,16 +31,14 @@ struct Statistic {
         stddev += (val - tmp_mean) * (val - mean);
     }
 
-    std::string header() {
+    std::string column_names() {
         std::stringstream ss;
-        ss << "min_" << name << ","
-           << "max_" << name << ","
-           << "mean_" << name << ","
-           << "stddev_" << name << ",";
+        ss << header << "_min_" << name << "," << header << "_max_" << name << ","
+           << header << "_mean_" << name << "," << header << "_stddev_" << name << ",";
         return ss.str();
     }
 
-    std::string to_string() {
+    const std::string to_string() const {
         std::stringstream ss;
         if constexpr (std::is_same<T, double>()) {
             ss << std::setprecision(MAX_DOUBLE_PRECISION) << min << ","

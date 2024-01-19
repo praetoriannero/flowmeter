@@ -48,9 +48,7 @@ struct Service {
         return false;
     }
 
-    bool operator<=(const Service &service) const {
-        return !operator>(service);
-    }
+    bool operator<=(const Service &service) const { return !operator>(service); }
 
     bool operator<(const Service &service) const {
         if (port < service.port) {
@@ -74,9 +72,7 @@ struct Service {
         return false;
     }
 
-    bool operator>=(const Service &service) const {
-        return !operator<(service);
-    }
+    bool operator>=(const Service &service) const { return !operator<(service); }
 
     bool operator==(const Service &service) const {
         return mac_addr == service.mac_addr && ip_addr == service.ip_addr &&
@@ -102,8 +98,7 @@ struct Service {
 
     template <typename H>
     friend H AbslHashValue(H h, const Service &service) {
-        return H::combine(std::move(h), service.mac_addr, service.ip_addr,
-                          service.port);
+        return H::combine(std::move(h), service.mac_addr, service.ip_addr, service.port);
     }
 };
 
@@ -165,14 +160,12 @@ class ServicePair {
     ServicePair() = default;
     ServicePair(const ServicePair &pair) = default;
 
-    const Tins::Constants::IP::e transport_protocol() const {
-        return transport_proto;
-    }
+    const Tins::Constants::IP::e transport_protocol() const { return transport_proto; }
 
     template <typename H>
     friend H AbslHashValue(H h, const ServicePair &pair) {
-        return H::combine(std::move(h), pair.l_service, pair.r_service,
-                          pair.vlan_id, pair.transport_proto);
+        return H::combine(std::move(h), pair.l_service, pair.r_service, pair.vlan_id,
+                          pair.transport_proto);
     }
 
     operator bool() const {

@@ -24,8 +24,8 @@ struct MeterImpl {};
 
 class Meter {
   public:
-    Meter(const std::string &input_file)
-        : sniffer_(input_file), pcap_path_(input_file) {}
+    Meter(const std::string &input_file, const std::string &output_file)
+        : sniffer_(input_file), pcap_path_(input_file), csv_path_(output_file) {}
 
     void run() {
         std::cout << "Processing " << pcap_path_ << std::endl;
@@ -34,6 +34,7 @@ class Meter {
         double last_packet_ts;
         double last_check;
         uint64_t init_id = 0;
+        std::ofstream out_file(csv_path_);
         while (packet_ = sniffer_.next_packet()) {
             auto packet_ts = get_packet_timestamp(packet_);
 
@@ -47,7 +48,7 @@ class Meter {
 
             if (time_delta > status_increment) {
                 if (flow_cache_.size()) {
-                    auto check_timeout = [packet_ts](auto &it) {
+                    auto check_timeout = [packet_ts, &out_file](auto &it) {
                         auto time_since_start =
                             packet_ts - it.second.bidirectional.last_seen_ms;
                         auto time_since_update =
@@ -55,11 +56,11 @@ class Meter {
 
                         if (time_since_start >= active_timeout_) {
                             it.second.exp_code = ExpirationCode::ACTIVE_TIMEOUT;
-                            // increment sub-init id and keep key, don't delete
                             auto last_init_id = it.second.init_id;
                             auto next_sub_init_id = it.second.sub_init_id++;
-                            it.second = NetworkFlow(it.first, last_init_id,
-                                                    next_sub_init_id);
+                            it.second =
+                                NetworkFlow(it.first, last_init_id, next_sub_init_id);
+                            out_file << it.second.to_string() << "\n";
                             return false;
                         } else if (time_since_update >= idle_timeout_) {
                             it.second.exp_code = ExpirationCode::IDLE_TIMEOUT;
@@ -81,34 +82,34 @@ class Meter {
             }
 
             auto [it, success] = flow_cache_.emplace(
-                service_pair_,
-                NetworkFlow(service_pair_, init_id, default_sub_id));
+                service_pair_, NetworkFlow(service_pair_, init_id, default_sub_id));
 
             if (success) {
                 init_id++;
             }
 
-            if (packet_ts - it->second.bidirectional.last_seen_ms >
-                active_timeout_) {
+            if (packet_ts - it->second.bidirectional.last_seen_ms > active_timeout_) {
                 auto last_init_id = it->second.init_id;
                 auto next_sub_init_id = it->second.sub_init_id++;
-                it->second =
-                    NetworkFlow(service_pair_, last_init_id, next_sub_init_id);
+                it->second = NetworkFlow(service_pair_, last_init_id, next_sub_init_id);
+                out_file << it->second.to_string() << "\n";
             }
             it->second.update(packet_, service_pair_, packet_ts);
 
             last_packet_ts = packet_ts;
         }
 
+        out_file.close();
+
         // Display meter summary
         auto end_time = high_resolution_clock::now();
-        auto nanosecs = std::chrono::duration_cast<std::chrono::nanoseconds>(
-                            end_time - start_time)
-                            .count();
+        auto nanosecs =
+            std::chrono::duration_cast<std::chrono::nanoseconds>(end_time - start_time)
+                .count();
         seconds_ = nanosecs / 1'000'000'000.0;
         pkts_per_sec_ = pkt_count / seconds_;
-        std::cout << "Read " << pkt_count << " packets in " << seconds_
-                  << " seconds" << std::endl;
+        std::cout << "Read " << pkt_count << " packets in " << seconds_ << " seconds"
+                  << std::endl;
         std::cout << std::setprecision(MAX_DOUBLE_PRECISION) << pkts_per_sec_
                   << " pkts/sec" << std::endl;
     }
@@ -117,6 +118,7 @@ class Meter {
     Tins::Packet packet_;
     Tins::FileSniffer sniffer_;
     std::string pcap_path_;
+    std::string csv_path_;
     double seconds_;
     double pkts_per_sec_;
     static constexpr double active_timeout_{120};

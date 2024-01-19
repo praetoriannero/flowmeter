@@ -10,6 +10,7 @@
 #include "tins/tcp.h"
 #include "tins/udp.h"
 #include <cstdint>
+#include <sstream>
 #include <string_view>
 
 #include "flowmeter/service.h"
@@ -18,13 +19,7 @@
 
 namespace Net {
 
-enum ExpirationCode {
-    UNINITIALIZED,
-    ALIVE,
-    ACTIVE_TIMEOUT,
-    IDLE_TIMEOUT,
-    USER_SPECIFIED
-};
+enum ExpirationCode { UNINITIALIZED, ALIVE, ACTIVE_TIMEOUT, IDLE_TIMEOUT, USER_SPECIFIED };
 
 struct Flow {
     const Tins::Constants::IP::e transport_proto{};
@@ -34,8 +29,8 @@ struct Flow {
     double duration_ms = 0;
     uint64_t pkt_count = 0;
     uint64_t byte_count = 0;
-    Statistic<uint64_t> packet_size{"ps"}; // packet size
-    Statistic<double> packet_iat{"piat"};  // packet inter-arrival time
+    Statistic<uint64_t> packet_size{direction, "ps"}; // packet size
+    Statistic<double> packet_iat{direction, "piat"};  // packet inter-arrival time
     uint64_t syn_count = 0;
     uint64_t cwr_count = 0;
     uint64_t ece_count = 0;
@@ -50,15 +45,12 @@ struct Flow {
 
     Flow(const Flow &flow) = default;
 
-    inline void update(const Tins::Packet &packet,
-                       const double &pkt_timestamp) {
+    inline void update(const Tins::Packet &packet, const double &pkt_timestamp) {
         pkt_count++;
 
-        first_seen_ms =
-            pkt_timestamp < first_seen_ms ? pkt_timestamp : first_seen_ms;
+        first_seen_ms = pkt_timestamp < first_seen_ms ? pkt_timestamp : first_seen_ms;
         auto tmp_last_seen_ms = last_seen_ms;
-        last_seen_ms =
-            pkt_timestamp > last_seen_ms ? pkt_timestamp : last_seen_ms;
+        last_seen_ms = pkt_timestamp > last_seen_ms ? pkt_timestamp : last_seen_ms;
 
         byte_count += packet.pdu()->size();
 
@@ -101,7 +93,17 @@ struct Flow {
 
     inline void finalize() { duration_ms = last_seen_ms - first_seen_ms; }
 
-    std::string to_string() const { return "NOT IMPLEMENTED"; }
+    const std::string to_string() const {
+        std::stringstream ss;
+        ss << std::setprecision(MAX_DOUBLE_PRECISION) << first_seen_ms << ","
+           << std::setprecision(MAX_DOUBLE_PRECISION) << last_seen_ms << ","
+           << std::setprecision(MAX_DOUBLE_PRECISION) << duration_ms << "," << pkt_count
+           << "," << byte_count << "," << packet_size.to_string() << ","
+           << packet_iat.to_string() << "," << syn_count << "," << cwr_count << ","
+           << ece_count << "," << urg_count << "," << ack_count << "," << psh_count << ","
+           << rst_count << "," << fin_count;
+        return ss.str();
+    }
 };
 
 struct Src2DstFlow : Flow {
@@ -147,17 +149,15 @@ struct NetworkFlow {
 
     NetworkFlow(const ServicePair &pair, const uint32_t init_id_val,
                 const uint32_t sub_init_id_val)
-        : service_pair(pair), init_id(init_id_val),
-          sub_init_id(sub_init_id_val), src_to_dst(pair.transport_proto),
-          dst_to_src(pair.transport_proto), bidirectional(pair.transport_proto),
-          exp_code(ExpirationCode::ALIVE) {}
+        : service_pair(pair), init_id(init_id_val), sub_init_id(sub_init_id_val),
+          src_to_dst(pair.transport_proto), dst_to_src(pair.transport_proto),
+          bidirectional(pair.transport_proto), exp_code(ExpirationCode::ALIVE) {}
 
     NetworkFlow(const NetworkFlow &net_flow) = default;
 
     NetworkFlow operator=(const NetworkFlow rhs) { return rhs; };
 
-    inline void update(Tins::Packet &pkt, ServicePair &pair,
-                       double &timestamp) {
+    inline void update(Tins::Packet &pkt, ServicePair &pair, double &timestamp) {
         bidirectional.update(pkt, timestamp);
 
         if (pair.src_service == service_pair.src_service) {
@@ -168,6 +168,13 @@ struct NetworkFlow {
     }
 
     double last_update_ts() const { return bidirectional.last_seen_ms; }
+
+    const std::string to_string() const {
+        std::stringstream ss;
+        ss << init_id << "," << sub_init_id << "," << bidirectional.to_string() << ","
+           << src_to_dst.to_string() << "," << dst_to_src.to_string();
+        return ss.str();
+    }
 };
 
 } // end namespace Net
