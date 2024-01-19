@@ -58,7 +58,8 @@ class Meter {
                             // increment sub-init id and keep key, don't delete
                             auto last_init_id = it.second.init_id;
                             auto next_sub_init_id = it.second.sub_init_id++;
-                            it.second = NetworkFlow(it.first, last_init_id, next_sub_init_id);
+                            it.second = NetworkFlow(it.first, last_init_id,
+                                                    next_sub_init_id);
                             return false;
                         } else if (time_since_update >= idle_timeout_) {
                             it.second.exp_code = ExpirationCode::IDLE_TIMEOUT;
@@ -79,16 +80,20 @@ class Meter {
                 continue;
             }
 
-            auto [it, success] = flow_cache_.emplace(service_pair_, NetworkFlow(service_pair_, init_id, default_sub_id));
+            auto [it, success] = flow_cache_.emplace(
+                service_pair_,
+                NetworkFlow(service_pair_, init_id, default_sub_id));
 
             if (success) {
                 init_id++;
             }
 
-            if (packet_ts - it->second.bidirectional.last_seen_ms > active_timeout_) {
+            if (packet_ts - it->second.bidirectional.last_seen_ms >
+                active_timeout_) {
                 auto last_init_id = it->second.init_id;
                 auto next_sub_init_id = it->second.sub_init_id++;
-                it->second = NetworkFlow(service_pair_, last_init_id, next_sub_init_id);
+                it->second =
+                    NetworkFlow(service_pair_, last_init_id, next_sub_init_id);
             }
             it->second.update(packet_, service_pair_, packet_ts);
 

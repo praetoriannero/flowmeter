@@ -148,10 +148,8 @@ class ServicePair {
             src_service = {src_mac_, src_addr_, src_port_};
             dst_service = {dst_mac_, dst_addr_, dst_port_};
 
-            l_service =
-                src_service < dst_service ? src_service : dst_service;
-            r_service =
-                dst_service < src_service ? dst_service : src_service;
+            l_service = src_service < dst_service ? src_service : dst_service;
+            r_service = dst_service < src_service ? dst_service : src_service;
 
             if (dot1q_pdu_ptr_ = eth_pdu_ptr_->find_pdu<Tins::Dot1Q>()) {
                 vlan_id = dot1q_pdu_ptr_->id();
@@ -162,8 +160,7 @@ class ServicePair {
     ServicePair(Service &source, Service &dest, uint8_t vlan,
                 Tins::Constants::IP::e transport)
         : src_service(source), dst_service(dest), l_service(src_service),
-          r_service(dst_service), vlan_id(vlan),
-          transport_proto(transport) {}
+          r_service(dst_service), vlan_id(vlan), transport_proto(transport) {}
 
     ServicePair() = default;
     ServicePair(const ServicePair &pair) = default;
@@ -184,10 +181,8 @@ class ServicePair {
     }
 
     bool operator==(const ServicePair &pair) const {
-        return 
-               (transport_proto == pair.transport_proto) &&
-               (l_service == pair.l_service) &&
-               (r_service == pair.r_service) &&
+        return (transport_proto == pair.transport_proto) &&
+               (l_service == pair.l_service) && (r_service == pair.r_service) &&
                (vlan_id == vlan_id);
     }
 

@@ -50,7 +50,8 @@ struct Flow {
 
     Flow(const Flow &flow) = default;
 
-    inline void update(const Tins::Packet &packet, const double &pkt_timestamp) {
+    inline void update(const Tins::Packet &packet,
+                       const double &pkt_timestamp) {
         pkt_count++;
 
         first_seen_ms =
@@ -144,25 +145,19 @@ struct NetworkFlow {
     Dst2SrcFlow dst_to_src;
     BidirFlow bidirectional;
 
-    NetworkFlow(const ServicePair &pair, const uint32_t init_id_val, const uint32_t sub_init_id_val)
-        : service_pair(pair),
-          init_id(init_id_val),
-          sub_init_id(sub_init_id_val),
-          src_to_dst(pair.transport_proto),
-          dst_to_src(pair.transport_proto),
-          bidirectional(pair.transport_proto),
+    NetworkFlow(const ServicePair &pair, const uint32_t init_id_val,
+                const uint32_t sub_init_id_val)
+        : service_pair(pair), init_id(init_id_val),
+          sub_init_id(sub_init_id_val), src_to_dst(pair.transport_proto),
+          dst_to_src(pair.transport_proto), bidirectional(pair.transport_proto),
           exp_code(ExpirationCode::ALIVE) {}
 
     NetworkFlow(const NetworkFlow &net_flow) = default;
 
-    // NetworkFlow& operator=(NetworkFlow &rhs) {
-    //     return rhs;
-    // };
-    NetworkFlow operator=(const NetworkFlow rhs) {
-        return rhs;
-    };
+    NetworkFlow operator=(const NetworkFlow rhs) { return rhs; };
 
-    inline void update(Tins::Packet &pkt, ServicePair &pair, double &timestamp) {
+    inline void update(Tins::Packet &pkt, ServicePair &pair,
+                       double &timestamp) {
         bidirectional.update(pkt, timestamp);
 
         if (pair.src_service == service_pair.src_service) {

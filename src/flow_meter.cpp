@@ -10,8 +10,8 @@
 #include <stdexcept>
 #include <string>
 
-#include "flowmeter/statistic.h"
 #include "flowmeter/meter.h"
+#include "flowmeter/statistic.h"
 
 int main(int argc, char **argv) {
     CLI::App app{"A program to evaluate IP-based flows"};
@@ -27,4 +27,3 @@ int main(int argc, char **argv) {
 
     meter.run();
 }
-
