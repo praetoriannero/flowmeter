@@ -100,7 +100,8 @@ class Meter {
                     out_file << it->second.to_string() << "\n";
                     auto last_init_id = it->second.init_id;
                     auto next_sub_init_id = it->second.sub_init_id++;
-                    it->second = NetworkFlow(service_pair_, last_init_id, next_sub_init_id);
+                    it->second =
+                        NetworkFlow(service_pair_, last_init_id, next_sub_init_id);
                 }
             }
             it->second.update(packet_, service_pair_, packet_ts);
