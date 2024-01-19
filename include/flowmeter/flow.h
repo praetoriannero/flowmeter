@@ -189,8 +189,8 @@ struct NetworkFlow {
 
     const std::string column_names() const {
         std::stringstream ss;
-        ss << "init_id,sub_init_id,expiration_reason," << bidirectional.column_names()
-           << src2dst.column_names() << dst2src.column_names();
+        ss << "init_id,sub_init_id,expiration_reason," << bidirectional.column_names() << ","
+           << src2dst.column_names() << "," << dst2src.column_names();
         return ss.str();
     }
 
