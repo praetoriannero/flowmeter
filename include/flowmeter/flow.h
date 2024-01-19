@@ -10,6 +10,7 @@
 #include "tins/tcp.h"
 #include "tins/udp.h"
 #include <cstdint>
+#include <limits>
 #include <sstream>
 #include <string_view>
 
@@ -24,8 +25,8 @@ enum ExpirationCode { UNINITIALIZED, ALIVE, ACTIVE_TIMEOUT, IDLE_TIMEOUT, USER_S
 struct Flow {
     const Tins::Constants::IP::e transport_proto{};
     std::string direction{"DEFAULT"};
-    double first_seen_ms = 0;
-    double last_seen_ms = 0;
+    double first_seen_ms = std::numeric_limits<double>::max();
+    double last_seen_ms = std::numeric_limits<double>::min();
     double duration_ms = 0;
     uint64_t pkt_count = 0;
     uint64_t byte_count = 0;
@@ -40,17 +41,20 @@ struct Flow {
     uint64_t rst_count = 0;
     uint64_t fin_count = 0;
 
-    Flow(const Tins::Constants::IP::e transport_protocol)
-        : transport_proto(transport_protocol) {}
+    Flow(const std::string direction_str, const Tins::Constants::IP::e transport_protocol)
+        : direction(direction_str), transport_proto(transport_protocol) {}
 
     Flow(const Flow &flow) = default;
 
     inline void update(const Tins::Packet &packet, const double &pkt_timestamp) {
+        if (!pkt_count) {
+            first_seen_ms = pkt_timestamp;
+        }
+
         pkt_count++;
 
-        first_seen_ms = pkt_timestamp < first_seen_ms ? pkt_timestamp : first_seen_ms;
         auto tmp_last_seen_ms = last_seen_ms;
-        last_seen_ms = pkt_timestamp > last_seen_ms ? pkt_timestamp : last_seen_ms;
+        last_seen_ms = pkt_timestamp;
 
         byte_count += packet.pdu()->size();
 
@@ -104,22 +108,33 @@ struct Flow {
            << rst_count << "," << fin_count;
         return ss.str();
     }
+
+    const std::string column_names() const {
+        std::stringstream ss;
+        ss << direction << "_first_seen_ms," << direction << "_last_seen_ms,"
+           << direction << "_duration_ms," << direction << "_packet_count,"
+           << direction << "_bytes," << packet_size.column_names() << ","
+           << packet_iat.column_names() << "," << direction << "_syn_count," << direction << "_cwr_count,"
+           << direction << "_ece_count," << direction << "_urg_count," << direction << "_ack_count," << direction << "_psh_count,"
+           << direction << "_rst_count," << direction << "_fin_count";
+        return ss.str();
+    }
 };
 
-struct Src2DstFlow : Flow {
-    std::string direction{"src_to_dst"};
-    using Flow::Flow;
-};
+// struct Src2DstFlow : Flow {
+//     std::string direction{"src2dst"};
+//     using Flow::Flow;
+// };
 
-struct Dst2SrcFlow : Flow {
-    std::string direction{"dst_to_src"};
-    using Flow::Flow;
-};
+// struct Dst2SrcFlow : Flow {
+//     std::string direction{"dst2src"};
+//     using Flow::Flow;
+// };
 
-struct BidirFlow : Flow {
-    std::string direction{"bidirectional"};
-    using Flow::Flow;
-};
+// struct BidirFlow : Flow {
+//     std::string direction{"bidirectional"};
+//     using Flow::Flow;
+// };
 
 struct NetworkFlow {
     ServicePair service_pair{};
@@ -143,15 +158,15 @@ struct NetworkFlow {
     // uint16_t vlan_id{};
     // Tins::Constants::IP::e transport_proto{};
 
-    Src2DstFlow src_to_dst;
-    Dst2SrcFlow dst_to_src;
-    BidirFlow bidirectional;
+    Flow src2dst;
+    Flow dst2src;
+    Flow bidirectional;
 
     NetworkFlow(const ServicePair &pair, const uint32_t init_id_val,
                 const uint32_t sub_init_id_val)
         : service_pair(pair), init_id(init_id_val), sub_init_id(sub_init_id_val),
-          src_to_dst(pair.transport_proto), dst_to_src(pair.transport_proto),
-          bidirectional(pair.transport_proto), exp_code(ExpirationCode::ALIVE) {}
+          src2dst("src2dst", pair.transport_proto), dst2src("dst2src", pair.transport_proto),
+          bidirectional("bidirectional", pair.transport_proto), exp_code(ExpirationCode::ALIVE) {}
 
     NetworkFlow(const NetworkFlow &net_flow) = default;
 
@@ -161,18 +176,25 @@ struct NetworkFlow {
         bidirectional.update(pkt, timestamp);
 
         if (pair.src_service == service_pair.src_service) {
-            src_to_dst.update(pkt, timestamp);
+            src2dst.update(pkt, timestamp);
         } else {
-            dst_to_src.update(pkt, timestamp);
+            dst2src.update(pkt, timestamp);
         }
     }
 
     double last_update_ts() const { return bidirectional.last_seen_ms; }
 
+    const std::string column_names() const {
+        std::stringstream ss;
+        ss << "init_id,sub_init_id,expiration_reason," << bidirectional.column_names()
+           << src2dst.column_names() << dst2src.column_names();
+        return ss.str();
+    }
+
     const std::string to_string() const {
         std::stringstream ss;
-        ss << init_id << "," << sub_init_id << "," << bidirectional.to_string() << ","
-           << src_to_dst.to_string() << "," << dst_to_src.to_string();
+        ss << init_id << "," << sub_init_id << "," << exp_code << "," << bidirectional.to_string() << ","
+           << src2dst.to_string() << "," << dst2src.to_string();
         return ss.str();
     }
 };

@@ -31,10 +31,10 @@ struct Statistic {
         stddev += (val - tmp_mean) * (val - mean);
     }
 
-    std::string column_names() {
+    const std::string column_names() const {
         std::stringstream ss;
         ss << header << "_min_" << name << "," << header << "_max_" << name << ","
-           << header << "_mean_" << name << "," << header << "_stddev_" << name << ",";
+           << header << "_mean_" << name << "," << header << "_stddev_" << name;
         return ss.str();
     }
 
