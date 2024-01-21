@@ -1,6 +1,7 @@
 #ifndef FLOWMETER_SERVICEH
 #define FLOWMETER_SERVICEH
 
+#include "fmt/core.h"
 #include "tins/constants.h"
 #include "tins/dot1q.h"
 #include "tins/ethernetII.h"
@@ -108,7 +109,7 @@ class ServicePair {
     Service dst_service{};
     Service l_service{src_service};
     Service r_service{dst_service};
-    uint8_t vlan_id{};
+    uint8_t vlan_id{0};
     Tins::Constants::IP::e transport_proto{};
 
     ServicePair(Tins::Packet &pkt) {
@@ -119,11 +120,13 @@ class ServicePair {
             if (ipv6_pdu_ptr_ = eth_pdu_ptr_->find_pdu<Tins::IPv6>()) {
                 to_bytes(ipv6_pdu_ptr_->src_addr(), src_addr_);
                 to_bytes(ipv6_pdu_ptr_->dst_addr(), dst_addr_);
-                ip_version_ = Tins::Constants::Ethernet::e::IP;
+                // ip_version_ = Tins::Constants::Ethernet::e::IP;
+                ip_version_ = 4;
             } else if (ip_pdu_ptr_ = eth_pdu_ptr_->find_pdu<Tins::IP>()) {
                 to_bytes(ip_pdu_ptr_->src_addr(), src_addr_);
                 to_bytes(ip_pdu_ptr_->dst_addr(), dst_addr_);
-                ip_version_ = Tins::Constants::Ethernet::e::IPV6;
+                // ip_version_ = Tins::Constants::Ethernet::e::IPV6;
+                ip_version_ = 6;
             } else {
                 return;
             }
@@ -181,6 +184,30 @@ class ServicePair {
 
     bool operator!=(const ServicePair &pair) const { return !(*this) == pair; }
 
+    const std::string column_names() const {
+        return "src_mac,dst_mac,src_ip,dst_ip,sport,dport,vlan_id,ip_version";
+    }
+
+    const std::string to_string() const {
+        std::stringstream ss;
+        ss << eth_pdu_ptr_->src_addr().to_string() << ","
+           << eth_pdu_ptr_->dst_addr().to_string() << ",";
+        if (ip_pdu_ptr_) {
+            ss << ip_pdu_ptr_->src_addr().to_string() << ","
+               << ip_pdu_ptr_->dst_addr().to_string() << ",";
+        } else {
+            ss << ipv6_pdu_ptr_->src_addr().to_string() << ","
+               << ipv6_pdu_ptr_->dst_addr().to_string() << ",";
+        }
+        if (tcp_pdu_ptr_) {
+            ss << tcp_pdu_ptr_->sport() << "," << tcp_pdu_ptr_->dport() << ",";
+        } else {
+            ss << udp_pdu_ptr_->sport() << "," << udp_pdu_ptr_->dport() << ",";
+        }
+        ss << fmt::format("{}", vlan_id) << "," << fmt::format("{}", ip_version_);
+        return ss.str();
+    }
+
   private:
     MacAddress src_mac_;
     MacAddress dst_mac_;
@@ -193,7 +220,8 @@ class ServicePair {
     IpAddress dst_addr_{};
     uint16_t src_port_;
     uint16_t dst_port_;
-    Tins::Constants::Ethernet::e ip_version_;
+    // Tins::Constants::Ethernet::e ip_version_;
+    uint8_t ip_version_;
     Tins::Dot1Q *dot1q_pdu_ptr_{nullptr};
 };
 

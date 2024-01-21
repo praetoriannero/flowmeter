@@ -4,8 +4,8 @@
 #include "tins/packet.h"
 
 double get_packet_timestamp(const Tins::Packet &packet) {
-    return static_cast<double>(packet.timestamp().seconds()) /
-           static_cast<double>(packet.timestamp().microseconds());
+    return static_cast<double>(packet.timestamp().seconds()) +
+           (static_cast<double>(packet.timestamp().microseconds()) / 1'000'000);
 }
 
 #endif

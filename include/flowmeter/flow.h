@@ -46,24 +46,23 @@ struct Flow {
 
     Flow(const Flow &flow) = default;
 
-    inline void update(const Tins::Packet &packet, const double &pkt_timestamp) {
+    inline void update(const Tins::Packet &packet, const double pkt_timestamp) {
         if (!pkt_count) {
             first_seen_ms = pkt_timestamp;
         }
 
         pkt_count++;
 
-        auto tmp_last_seen_ms = last_seen_ms;
-        last_seen_ms = pkt_timestamp;
+        auto bytes = packet.pdu()->size();
+        byte_count += bytes;
 
-        byte_count += packet.pdu()->size();
-
-        packet_size.update(byte_count);
+        packet_size.update(bytes);
 
         if (pkt_count > 1) {
-            auto time_delta = last_seen_ms - tmp_last_seen_ms;
-            packet_iat.update(time_delta);
+            packet_iat.update(pkt_timestamp - last_seen_ms);
         }
+        last_seen_ms = pkt_timestamp;
+        duration_ms = last_seen_ms - first_seen_ms;
 
         if (transport_proto == Tins::Constants::IP::e::PROTO_TCP) {
             auto *tcp_pdu = packet.pdu()->find_pdu<Tins::TCP>();
@@ -122,21 +121,6 @@ struct Flow {
     }
 };
 
-// struct Src2DstFlow : Flow {
-//     std::string direction{"src2dst"};
-//     using Flow::Flow;
-// };
-
-// struct Dst2SrcFlow : Flow {
-//     std::string direction{"dst2src"};
-//     using Flow::Flow;
-// };
-
-// struct BidirFlow : Flow {
-//     std::string direction{"bidirectional"};
-//     using Flow::Flow;
-// };
-
 struct NetworkFlow {
     ServicePair service_pair{};
 
@@ -189,16 +173,17 @@ struct NetworkFlow {
 
     const std::string column_names() const {
         std::stringstream ss;
-        ss << "init_id,sub_init_id,expiration_reason," << bidirectional.column_names() << ","
-           << src2dst.column_names() << "," << dst2src.column_names();
+        ss << "init_id,sub_init_id,expiration_reason," << service_pair.column_names()
+           << "," << bidirectional.column_names() << "," << src2dst.column_names() << ","
+           << dst2src.column_names();
         return ss.str();
     }
 
     const std::string to_string() const {
         std::stringstream ss;
         ss << init_id << "," << sub_init_id << "," << exp_code << ","
-           << bidirectional.to_string() << "," << src2dst.to_string() << ","
-           << dst2src.to_string();
+           << service_pair.to_string() << "," << bidirectional.to_string() << ","
+           << src2dst.to_string() << "," << dst2src.to_string();
         return ss.str();
     }
 };

@@ -35,7 +35,6 @@ class Meter {
         double last_check;
         uint64_t init_id = 0;
         std::ofstream out_file(csv_path_);
-        // std::cout << NetworkFlow::column_names() << std::endl;
         while (packet_ = sniffer_.next_packet()) {
             auto packet_ts = get_packet_timestamp(packet_);
 
@@ -56,7 +55,6 @@ class Meter {
                             packet_ts - it.second.bidirectional.last_seen_ms;
 
                         if (time_since_start >= active_timeout_) {
-                            // std::cout << "active timeout in cache check" << std::endl;
                             it.second.exp_code = ExpirationCode::ACTIVE_TIMEOUT;
                             out_file << it.second.to_string() << "\n";
                             auto last_init_id = it.second.init_id;
@@ -65,7 +63,6 @@ class Meter {
                                 NetworkFlow(it.first, last_init_id, next_sub_init_id);
                             return false;
                         } else if (time_since_update >= idle_timeout_) {
-                            std::cout << "idle timeout" << std::endl;
                             it.second.exp_code = ExpirationCode::IDLE_TIMEOUT;
                             out_file << it.second.to_string() << "\n";
                             return true;
