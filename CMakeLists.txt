@@ -11,9 +11,14 @@ project(
 )
 
 add_subdirectory(third-party)
-
-set(FLOWMETER_INCLUDE_DIR "${CMAKE_SOURCE_DIR}/include/flowmeter")
 include_directories(${FLOWMETER_INCLUDE_DIR})
+
+set(LIBTINS_INCLUDE_DIR "${PROJECT_SOURCE_DIR}/third-party/libtins/include")
+set(FMT_INCLUDE_DIR "${PROJECT_SOURCE_DIR}/third-party/fmt/include")
+set(FLOWMETER_INCLUDE_DIR "${PROJECT_SOURCE_DIR}/include")
+set(CLI11_INCLUDE_DIR "${PROJECT_SOURCE_DIR}/third-party/CLI11/include")
+set(ABSEIL_INCLUDE_DIR "${PROJECT_SOURCE_DIR}/third-party/absl")
+set(FLOWMETER_INCLUDE_DIR "${PROJECT_SOURCE_DIR}/include")
 
 set(LIBTINS_INCLUDE_DIR "${PROJECT_SOURCE_DIR}/third-party/libtins/include")
 set(LIBTINS_SO_LOC "${PROJECT_BINARY_DIR}/third-party/libtins/lib/libtins.so.4.6")

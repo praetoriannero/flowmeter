@@ -12,6 +12,7 @@
 #include "tins/tcp.h"
 #include "tins/udp.h"
 #include <array>
+#include <sstream>
 
 #include "flowmeter/tins_ext.h"
 
@@ -220,7 +221,6 @@ class ServicePair {
     IpAddress dst_addr_{};
     uint16_t src_port_;
     uint16_t dst_port_;
-    // Tins::Constants::Ethernet::e ip_version_;
     uint8_t ip_version_;
     Tins::Dot1Q *dot1q_pdu_ptr_{nullptr};
 };
