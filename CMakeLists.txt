@@ -10,6 +10,10 @@ project(
     LANGUAGES CXX
 )
 
+find_package(Python3 COMPONENTS Interpreter Development REQUIRED)
+message(STATUS "Python3_INCLUDE_DIRS: ${Python3_INCLUDE_DIRS}")
+message(STATUS "USE_PYTHON_INCLUDE_DIR: ${USE_PYTHON_INCLUDE_DIR}")
+
 add_subdirectory(third-party)
 include_directories(${FLOWMETER_INCLUDE_DIR})
 
@@ -19,8 +23,10 @@ set(FLOWMETER_INCLUDE_DIR "${PROJECT_SOURCE_DIR}/include")
 set(CLI11_INCLUDE_DIR "${PROJECT_SOURCE_DIR}/third-party/CLI11/include")
 set(ABSEIL_INCLUDE_DIR "${PROJECT_SOURCE_DIR}/third-party/absl")
 set(FLOWMETER_INCLUDE_DIR "${PROJECT_SOURCE_DIR}/include")
+set(PYBIND11_INCLUDE_DIR "${PROJECT_SOURCE_DIR}/third-party/pybind11/include")
 
 set(LIBTINS_INCLUDE_DIR "${PROJECT_SOURCE_DIR}/third-party/libtins/include")
 set(LIBTINS_SO_LOC "${PROJECT_BINARY_DIR}/third-party/libtins/lib/libtins.so.4.6")
 set_property(TARGET tins PROPERTY IMPORTED_LOCATION ${LIBTINS_SO_LOC})
 add_subdirectory(src)
+add_subdirectory(python)
