@@ -97,30 +97,6 @@ struct Service {
                (port != service.port);
     }
 
-    // Service operator=(const Service &service) {
-    //     if (this == &service) {
-    //         return *this;
-    //     }
-
-    //     this->mac_addr = service.mac_addr;
-    //     this->ip_addr = service.ip_addr;
-    //     this->port = service.port;
-
-    //     return *this;
-    // }
-
-    // Service operator=(Service &service) {
-    //     if (this == &service) {
-    //         return *this;
-    //     }
-
-    //     this->mac_addr = service.mac_addr;
-    //     this->ip_addr = service.ip_addr;
-    //     this->port = service.port;
-
-    //     return *this;
-    // }
-
     template <typename H>
     friend H AbslHashValue(H h, const Service &service) {
         return H::combine(std::move(h), service.mac_addr, service.ip_addr, service.port);
@@ -200,12 +176,12 @@ class ServicePair {
     ServicePair(const ServicePair &pair)
         : src_service(pair.src_service), dst_service(pair.dst_service),
           l_service(pair.l_service), r_service(pair.r_service), vlan_id(pair.vlan_id),
-          transport_proto(pair.transport_proto) {}
+          transport_proto(pair.transport_proto), ip_version(pair.ip_version) {}
 
     ServicePair(ServicePair &pair)
         : src_service(pair.src_service), dst_service(pair.dst_service),
           l_service(pair.l_service), r_service(pair.r_service), vlan_id(pair.vlan_id),
-          transport_proto(pair.transport_proto) {}
+          transport_proto(pair.transport_proto), ip_version(pair.ip_version) {}
 
     void reset() {
         eth_pdu_ptr_ = nullptr;

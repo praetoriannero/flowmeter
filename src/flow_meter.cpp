@@ -13,7 +13,7 @@
 #include "flowmeter/meter.h"
 #include "flowmeter/statistic.h"
 
-int main(int argc, char **argv) {
+auto main(int argc, char **argv) -> int {
     CLI::App app{"A program to evaluate IP-based flows"};
 
     std::string pcap_path;
