@@ -10,3 +10,4 @@ target_include_directories(
 )
 target_link_libraries(flow-meter PUBLIC ${LIBTINS_SO_LOC} fmt::fmt CLI11::CLI11 absl::flat_hash_map)
 add_dependencies(flow-meter tins fmt CLI11)
+set_target_properties(flow-meter PROPERTIES CXX_CLANG_TIDY "${CLANG_TIDY_COMMAND}")

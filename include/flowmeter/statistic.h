@@ -22,6 +22,14 @@ struct Statistic {
     Statistic(std::string header_name, std::string stat_name)
         : header(header_name), name(stat_name) {}
 
+    inline void reset() {
+        min = std::numeric_limits<T>::max();
+        max = std::numeric_limits<T>::min();
+        count = 0;
+        mean = 0;
+        stddev = 0;
+    }
+
     inline void update(T val) {
         count++;
         min = val < min ? val : min;

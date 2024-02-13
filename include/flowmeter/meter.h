@@ -1,7 +1,7 @@
 #ifndef FLOWMETER_METER_H
 #define FLOWMETER_METER_H
 
-#include "absl/container/node_hash_map.h"
+#include "absl/container/flat_hash_map.h"
 #include "tins/ethernetII.h"
 #include "tins/ip.h"
 #include "tins/ipv6.h"
@@ -11,6 +11,8 @@
 #include "tins/udp.h"
 #include <iomanip>
 #include <iostream>
+#include <fstream>
+#include <map>
 
 #include "flowmeter/constants.h"
 #include "flowmeter/flow.h"
@@ -46,7 +48,7 @@ class Meter {
 
             auto time_delta = packet_ts - last_check;
 
-            if (time_delta > status_increment) {
+            if (time_delta > status_increment_) {
                 if (flow_cache_.size()) {
                     auto check_timeout = [packet_ts, &out_file](auto &it) {
                         auto time_since_start =
@@ -57,10 +59,9 @@ class Meter {
                         if (time_since_start >= active_timeout_) {
                             it.second.exp_code = ExpirationCode::ACTIVE_TIMEOUT;
                             out_file << it.second.to_string() << "\n";
-                            auto last_init_id = it.second.init_id;
-                            auto next_sub_init_id = it.second.sub_init_id++;
-                            it.second =
-                                NetworkFlow(it.first, last_init_id, next_sub_init_id);
+                            it.second.sub_init_id++;
+                            it.second.exp_code = ExpirationCode::ALIVE;
+                            it.second.reset();
                             return false;
                         } else if (time_since_update >= idle_timeout_) {
                             it.second.exp_code = ExpirationCode::IDLE_TIMEOUT;
@@ -78,12 +79,13 @@ class Meter {
             }
 
             ServicePair service_pair_{packet_};
+
             if (!service_pair_) {
                 continue;
             }
 
             auto [it, success] = flow_cache_.emplace(
-                service_pair_, NetworkFlow(service_pair_, init_id, default_sub_id));
+                service_pair_, NetworkFlow(service_pair_, init_id, default_sub_id_));
 
             if (pkt_count == 1) {
                 out_file << it->second.column_names() << "\n";
@@ -91,20 +93,18 @@ class Meter {
 
             if (success) {
                 init_id++;
-            } else {
-                if (packet_ts - it->second.bidirectional.last_seen_ms > active_timeout_) {
-                    it->second.exp_code = ExpirationCode::ACTIVE_TIMEOUT;
-                    out_file << it->second.to_string() << "\n";
-                    auto last_init_id = it->second.init_id;
-                    auto next_sub_init_id = it->second.sub_init_id++;
-                    it->second =
-                        NetworkFlow(service_pair_, last_init_id, next_sub_init_id);
-                }
             }
+
             it->second.update(packet_, service_pair_, packet_ts);
 
             last_packet_ts = packet_ts;
         }
+
+        for (auto &[key, flow] : flow_cache_) {
+            flow.exp_code = ExpirationCode::SESSION_END;
+            out_file << flow.to_string() << "\n";
+        }
+        flow_cache_.clear();
 
         out_file.close();
 
@@ -130,9 +130,10 @@ class Meter {
     double pkts_per_sec_;
     static constexpr double active_timeout_{120};
     static constexpr double idle_timeout_{60};
-    static constexpr double status_increment{1};
-    static constexpr u_int64_t default_sub_id{0};
-    absl::node_hash_map<ServicePair, NetworkFlow> flow_cache_;
+    static constexpr double status_increment_{1};
+    static constexpr u_int64_t default_sub_id_{0};
+    absl::flat_hash_map<ServicePair, NetworkFlow> flow_cache_;
+    // std::map<ServicePair, NetworkFlow> flow_cache_;
 };
 
 } // end namespace Net

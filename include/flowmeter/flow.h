@@ -11,6 +11,7 @@
 #include "tins/udp.h"
 #include <cstdint>
 #include <limits>
+#include <iomanip>
 #include <sstream>
 #include <string_view>
 
@@ -20,7 +21,7 @@
 
 namespace Net {
 
-enum ExpirationCode { UNINITIALIZED, ALIVE, ACTIVE_TIMEOUT, IDLE_TIMEOUT, USER_SPECIFIED };
+enum ExpirationCode { UNINITIALIZED, ALIVE, ACTIVE_TIMEOUT, IDLE_TIMEOUT, SESSION_END, USER_SPECIFIED };
 
 struct Flow {
     const Tins::Constants::IP::e transport_proto{};
@@ -40,6 +41,24 @@ struct Flow {
     uint64_t psh_count = 0;
     uint64_t rst_count = 0;
     uint64_t fin_count = 0;
+
+    inline void reset() {
+        first_seen_ms = std::numeric_limits<double>::max();
+        last_seen_ms = std::numeric_limits<double>::min();
+        duration_ms = 0;
+        pkt_count = 0;
+        byte_count = 0;
+        packet_size.reset(); // packet size
+        packet_iat.reset();  // packet inter-arrival time
+        syn_count = 0;
+        cwr_count = 0;
+        ece_count = 0;
+        urg_count = 0;
+        ack_count = 0;
+        psh_count = 0;
+        rst_count = 0;
+        fin_count = 0;
+    }
 
     Flow(const std::string direction_str, const Tins::Constants::IP::e transport_protocol)
         : direction(direction_str), transport_proto(transport_protocol) {}
@@ -122,32 +141,18 @@ struct Flow {
 };
 
 struct NetworkFlow {
-    ServicePair service_pair{};
+    ServicePair service_pair;
 
     int64_t init_id{};
     int64_t sub_init_id{};
 
     ExpirationCode exp_code{ExpirationCode::UNINITIALIZED};
 
-    // std::string src_mac{};
-    // std::string dst_mac{};
-
-    // std::string src_ip{};
-    // std::string dst_ip{};
-
-    // uint16_t ip_version{};
-
-    // uint16_t src_port{};
-    // uint16_t dst_port{};
-
-    // uint16_t vlan_id{};
-    // Tins::Constants::IP::e transport_proto{};
-
     Flow src2dst;
     Flow dst2src;
     Flow bidirectional;
 
-    NetworkFlow(const ServicePair &pair, const uint32_t init_id_val,
+    NetworkFlow(const ServicePair pair, const uint32_t init_id_val,
                 const uint32_t sub_init_id_val)
         : service_pair(pair), init_id(init_id_val), sub_init_id(sub_init_id_val),
           src2dst("src2dst", pair.transport_proto),
@@ -155,9 +160,17 @@ struct NetworkFlow {
           bidirectional("bidirectional", pair.transport_proto),
           exp_code(ExpirationCode::ALIVE) {}
 
+    inline void reset() {
+        src2dst.reset();
+        dst2src.reset();
+        bidirectional.reset();
+    }
+
     NetworkFlow(const NetworkFlow &net_flow) = default;
 
-    NetworkFlow operator=(const NetworkFlow rhs) { return rhs; };
+    // NetworkFlow operator=(const NetworkFlow rhs) { return rhs; };
+
+    // NetworkFlow operator=(NetworkFlow rhs) { return rhs; };
 
     inline void update(Tins::Packet &pkt, ServicePair &pair, double &timestamp) {
         bidirectional.update(pkt, timestamp);
@@ -184,6 +197,10 @@ struct NetworkFlow {
         ss << init_id << "," << sub_init_id << "," << exp_code << ","
            << service_pair.to_string() << "," << bidirectional.to_string() << ","
            << src2dst.to_string() << "," << dst2src.to_string();
+        // std::cout << service_pair.to_string() << std::endl;
+        // if (service_pair.ip_version_ == 6) {
+        //     std::abort();
+        // }
         return ss.str();
     }
 };
