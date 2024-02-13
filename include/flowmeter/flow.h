@@ -10,8 +10,8 @@
 #include "tins/tcp.h"
 #include "tins/udp.h"
 #include <cstdint>
-#include <limits>
 #include <iomanip>
+#include <limits>
 #include <sstream>
 #include <string_view>
 
@@ -21,7 +21,14 @@
 
 namespace Net {
 
-enum ExpirationCode { UNINITIALIZED, ALIVE, ACTIVE_TIMEOUT, IDLE_TIMEOUT, SESSION_END, USER_SPECIFIED };
+enum ExpirationCode {
+    UNINITIALIZED,
+    ALIVE,
+    ACTIVE_TIMEOUT,
+    IDLE_TIMEOUT,
+    SESSION_END,
+    USER_SPECIFIED
+};
 
 struct Flow {
     const Tins::Constants::IP::e transport_proto{};

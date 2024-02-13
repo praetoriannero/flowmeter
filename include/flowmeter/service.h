@@ -26,8 +26,7 @@ struct Service {
     Service(std::string mac_address, std::string ip_address, uint16_t port_num)
         : mac_addr(mac_address), ip_addr(ip_address), port(port_num) {}
 
-    Service(Service &rhs)
-        : mac_addr(rhs.mac_addr), ip_addr(rhs.ip_addr), port(rhs.port) {}
+    Service(Service &rhs) : mac_addr(rhs.mac_addr), ip_addr(rhs.ip_addr), port(rhs.port) {}
 
     Service(const Service &rhs)
         : mac_addr(rhs.mac_addr), ip_addr(rhs.ip_addr), port(rhs.port) {}
@@ -199,12 +198,14 @@ class ServicePair {
           r_service(r_service), vlan_id(vlan), transport_proto(transport) {}
 
     ServicePair(const ServicePair &pair)
-        : src_service(pair.src_service), dst_service(pair.dst_service), l_service(pair.l_service),
-          r_service(pair.r_service), vlan_id(pair.vlan_id), transport_proto(pair.transport_proto) {}
+        : src_service(pair.src_service), dst_service(pair.dst_service),
+          l_service(pair.l_service), r_service(pair.r_service), vlan_id(pair.vlan_id),
+          transport_proto(pair.transport_proto) {}
 
     ServicePair(ServicePair &pair)
-        : src_service(pair.src_service), dst_service(pair.dst_service), l_service(pair.l_service),
-          r_service(pair.r_service), vlan_id(pair.vlan_id), transport_proto(pair.transport_proto) {}
+        : src_service(pair.src_service), dst_service(pair.dst_service),
+          l_service(pair.l_service), r_service(pair.r_service), vlan_id(pair.vlan_id),
+          transport_proto(pair.transport_proto) {}
 
     void reset() {
         eth_pdu_ptr_ = nullptr;
@@ -224,13 +225,9 @@ class ServicePair {
                           pair.transport_proto);
     }
 
-    operator bool() const {
-        return initialized_;
-    }
+    operator bool() const { return initialized_; }
 
-    const bool valid() const {
-        return initialized_;
-    } 
+    const bool valid() const { return initialized_; }
 
     bool operator==(const ServicePair &pair) const {
         return (transport_proto == pair.transport_proto) &&
@@ -241,15 +238,16 @@ class ServicePair {
     bool operator!=(const ServicePair &pair) const { return !((*this) == pair); }
 
     const std::string column_names() const {
-        return "src_mac,dst_mac,src_ip,dst_ip,sport,dport,vlan_id,ip_version";
+        return "src_mac,dst_mac,src_ip,dst_ip,sport,dport,transport_proto,vlan_id,ip_"
+               "version";
     }
 
     const std::string to_string() const {
         std::stringstream ss;
         ss << src_service.mac_addr << "," << dst_service.mac_addr << ","
-           << src_service.ip_addr << "," << dst_service.ip_addr << ","
-           << src_service.port << "," << dst_service.port << "," << fmt::format("{}", vlan_id) << ","
-           << fmt::format("{}", ip_version);
+           << src_service.ip_addr << "," << dst_service.ip_addr << "," << src_service.port
+           << "," << dst_service.port << "," << transport_proto << ","
+           << fmt::format("{}", vlan_id) << "," << fmt::format("{}", ip_version);
         return ss.str();
     }
 

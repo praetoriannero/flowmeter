@@ -9,9 +9,9 @@
 #include "tins/sniffer.h"
 #include "tins/tcp.h"
 #include "tins/udp.h"
+#include <fstream>
 #include <iomanip>
 #include <iostream>
-#include <fstream>
 #include <map>
 
 #include "flowmeter/constants.h"
