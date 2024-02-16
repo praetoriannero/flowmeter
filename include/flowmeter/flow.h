@@ -38,8 +38,9 @@ struct Flow {
     double duration_ms = 0;
     uint64_t pkt_count = 0;
     uint64_t byte_count = 0;
-    Statistic<uint64_t> packet_size{direction, "ps"}; // packet size
-    Statistic<double> packet_iat{direction, "piat"};  // packet inter-arrival time
+    Statistic<uint64_t> packet_size{direction, "ps"};   // packet size
+    Statistic<double> packet_iat{direction, "piat"};    // packet inter-arrival time
+    Statistic<double> packet_entropy{direction, "ent"}; // packet entropy
     uint64_t syn_count = 0;
     uint64_t cwr_count = 0;
     uint64_t ece_count = 0;
@@ -55,8 +56,9 @@ struct Flow {
         duration_ms = 0;
         pkt_count = 0;
         byte_count = 0;
-        packet_size.reset(); // packet size
-        packet_iat.reset();  // packet inter-arrival time
+        packet_size.reset();    // packet size
+        packet_iat.reset();     // packet inter-arrival time
+        packet_entropy.reset(); // packet entropy
         syn_count = 0;
         cwr_count = 0;
         ece_count = 0;
@@ -128,9 +130,9 @@ struct Flow {
            << std::setprecision(MAX_DOUBLE_PRECISION) << last_seen_ms << ","
            << std::setprecision(MAX_DOUBLE_PRECISION) << duration_ms << "," << pkt_count
            << "," << byte_count << "," << packet_size.to_string() << ","
-           << packet_iat.to_string() << "," << syn_count << "," << cwr_count << ","
-           << ece_count << "," << urg_count << "," << ack_count << "," << psh_count << ","
-           << rst_count << "," << fin_count;
+           << packet_iat.to_string() << "," << packet_entropy.to_string() << ","
+           << syn_count << "," << cwr_count << "," << ece_count << "," << urg_count << ","
+           << ack_count << "," << psh_count << "," << rst_count << "," << fin_count;
         return ss.str();
     }
 
@@ -139,10 +141,10 @@ struct Flow {
         ss << direction << "_first_seen_ms," << direction << "_last_seen_ms," << direction
            << "_duration_ms," << direction << "_packet_count," << direction << "_bytes,"
            << packet_size.column_names() << "," << packet_iat.column_names() << ","
-           << direction << "_syn_count," << direction << "_cwr_count," << direction
-           << "_ece_count," << direction << "_urg_count," << direction << "_ack_count,"
-           << direction << "_psh_count," << direction << "_rst_count," << direction
-           << "_fin_count";
+           << packet_entropy.column_names() << "," << direction << "_syn_count,"
+           << direction << "_cwr_count," << direction << "_ece_count," << direction
+           << "_urg_count," << direction << "_ack_count," << direction << "_psh_count,"
+           << direction << "_rst_count," << direction << "_fin_count";
         return ss.str();
     }
 };

@@ -1,17 +1,7 @@
 #include "CLI/CLI.hpp"
-#include <chrono>
-#include <cstdint>
-#include <fmt/core.h>
-#include <iomanip>
-#include <iostream>
-#include <limits>
-#include <map>
-#include <sstream>
-#include <stdexcept>
 #include <string>
 
 #include "flowmeter/meter.h"
-#include "flowmeter/statistic.h"
 
 auto main(int argc, char **argv) -> int {
     CLI::App app{"A program to evaluate IP-based flows"};
