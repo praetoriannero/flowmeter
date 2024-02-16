@@ -14,6 +14,7 @@
 #include <limits>
 #include <sstream>
 #include <string_view>
+#include <bit>
 
 #include "flowmeter/service.h"
 #include "flowmeter/statistic.h"
@@ -74,7 +75,7 @@ struct Flow {
 
     Flow(const Flow &flow) = default;
 
-    inline void update(const Tins::Packet &packet, const double pkt_timestamp) {
+    inline void update(Tins::Packet &packet, const double pkt_timestamp) {
         if (!pkt_count) {
             first_seen_ms = pkt_timestamp;
         }
@@ -82,6 +83,17 @@ struct Flow {
         pkt_count++;
 
         auto bytes = packet.pdu()->size();
+        auto pkt_bytes = packet.pdu()->serialize();
+
+        double bit_count = 0;
+        for (auto byte : pkt_bytes) {
+            bit_count += std::popcount(byte);
+        }
+        double one_prob = bit_count / (bytes * 8);
+        double zero_prob = 1 - one_prob;
+        double gini = 1.0 - ((one_prob * one_prob) + (zero_prob * zero_prob)); 
+        packet_entropy.update(gini);
+
         byte_count += bytes;
 
         packet_size.update(bytes);

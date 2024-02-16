@@ -1,8 +1,10 @@
 cmake_minimum_required(VERSION 3.22)
 
-set(CMAKE_CXX_STANDARD 17)
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++17 -fPIC")
-set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fPIC")
+set(CMAKE_CXX_STANDARD 20)
+# set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++20 -fPIC")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fPIC")
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+# set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fPIC")
 
 find_program(CLANG_TIDY_EXE NAMES "clang-tidy")
 set(CLANG_TIDY_COMMAND "${CLANG_TIDY_EXE}" "-checks=-*,modernize-*")
