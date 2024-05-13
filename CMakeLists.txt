@@ -4,10 +4,19 @@ set(CMAKE_CXX_STANDARD 20)
 # set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++20 -fPIC")
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fPIC")
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
-# set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fPIC")
+if(CMAKE_BUILD_TYPE STREQUAL "Debug")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fsanitize=address")
+#     set(SANITIZE_ADDRESS ON)
+#     set(SANITIZE_MEMORY ON)
+#     set(SANITIZE_THREAD ON)
+#     set(SANITIZE_UNDEFINED ON)
+endif()
+
 
 find_program(CLANG_TIDY_EXE NAMES "clang-tidy")
 set(CLANG_TIDY_COMMAND "${CLANG_TIDY_EXE}" "-checks=-*,modernize-*")
+
+message(STATUS "CMake build type: ${CMAKE_BUILD_TYPE}")
 
 project(
     flowmeter

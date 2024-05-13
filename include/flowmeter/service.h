@@ -88,8 +88,7 @@ struct Service {
     bool operator>=(const Service &service) const { return !operator<(service); }
 
     bool operator==(const Service &service) const {
-        return (mac_addr == service.mac_addr) && (ip_addr == service.ip_addr) &&
-               (port == service.port);
+        return (port == service.port) && (ip_addr == service.ip_addr) && (mac_addr == service.mac_addr);
     }
 
     bool operator!=(const Service &service) const {
@@ -206,8 +205,8 @@ class ServicePair {
     const bool valid() const { return initialized_; }
 
     bool operator==(const ServicePair &pair) const {
-        return (transport_proto == pair.transport_proto) &&
-               (l_service == pair.l_service) && (r_service == pair.r_service) &&
+        return (l_service == pair.l_service) && (r_service == pair.r_service) &&
+               (transport_proto == pair.transport_proto) &&
                (vlan_id == vlan_id);
     }
 

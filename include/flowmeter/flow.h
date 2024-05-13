@@ -42,6 +42,10 @@ struct Flow {
     Statistic<uint64_t> packet_size{direction, "ps"};   // packet size
     Statistic<double> packet_iat{direction, "piat"};    // packet inter-arrival time
     Statistic<double> packet_entropy{direction, "ent"}; // packet entropy
+    uint64_t null_byte_count = 0;
+    uint64_t low_byte_count = 0;
+    uint64_t char_byte_count = 0;
+    uint64_t high_byte_count = 0;
     uint64_t syn_count = 0;
     uint64_t cwr_count = 0;
     uint64_t ece_count = 0;
@@ -82,21 +86,21 @@ struct Flow {
 
         pkt_count++;
 
-        auto bytes = packet.pdu()->size();
-        auto pkt_bytes = packet.pdu()->serialize();
+        auto total_bytes = packet.pdu()->size();
 
-        double bit_count = 0;
+        uint32_t bit_count = 0;
+        auto pkt_bytes = packet.pdu()->serialize();
         for (auto byte : pkt_bytes) {
             bit_count += std::popcount(byte);
         }
-        double one_prob = bit_count / (bytes * 8);
+        double one_prob = static_cast<double>(bit_count) / (total_bytes * 8.0);
         double zero_prob = 1 - one_prob;
         double gini = 1.0 - ((one_prob * one_prob) + (zero_prob * zero_prob)); 
         packet_entropy.update(gini);
 
-        byte_count += bytes;
+        byte_count += total_bytes;
 
-        packet_size.update(bytes);
+        packet_size.update(total_bytes);
 
         if (pkt_count > 1) {
             packet_iat.update(pkt_timestamp - last_seen_ms);
@@ -218,10 +222,6 @@ struct NetworkFlow {
         ss << init_id << "," << sub_init_id << "," << exp_code << ","
            << service_pair.to_string() << "," << bidirectional.to_string() << ","
            << src2dst.to_string() << "," << dst2src.to_string();
-        // std::cout << service_pair.to_string() << std::endl;
-        // if (service_pair.ip_version_ == 6) {
-        //     std::abort();
-        // }
         return ss.str();
     }
 };
