@@ -1,4 +1,4 @@
-pybind11_add_module(flowmeter flow_meter_lib.cpp)
+pybind11_add_module(flowmeter flowmeter_lib.cpp)
 
 target_include_directories(
     flowmeter PUBLIC
