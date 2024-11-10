@@ -52,20 +52,20 @@ class Meter {
 
             if (time_delta > status_increment_) {
                 if (flow_cache_.size()) {
-                    auto check_timeout = [packet_ts, &out_file](auto &it) {
+                    auto check_timeout = [packet_ts, &out_file, this](auto &it) {
                         auto time_since_start =
                             packet_ts - it.second.bidirectional.first_seen_ms;
                         auto time_since_update =
                             packet_ts - it.second.bidirectional.last_seen_ms;
 
-                        if (time_since_start >= active_timeout_) {
+                        if (time_since_start >= this->active_timeout_) {
                             it.second.exp_code = ExpirationCode::ACTIVE_TIMEOUT;
                             out_file << it.second.to_string() << "\n";
                             it.second.sub_init_id++;
                             it.second.exp_code = ExpirationCode::ALIVE;
                             it.second.reset();
                             return false;
-                        } else if (time_since_update >= idle_timeout_) {
+                        } else if (time_since_update >= this->idle_timeout_) {
                             it.second.exp_code = ExpirationCode::IDLE_TIMEOUT;
                             out_file << it.second.to_string() << "\n";
                             return true;
@@ -135,7 +135,6 @@ class Meter {
     static constexpr double status_increment_{1};
     static constexpr u_int64_t default_sub_id_{0};
     absl::flat_hash_map<ServicePair, NetworkFlow> flow_cache_;
-    // std::map<ServicePair, NetworkFlow> flow_cache_;
 };
 
 } // end namespace Net
