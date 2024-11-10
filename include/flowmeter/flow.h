@@ -9,12 +9,12 @@
 #include "tins/packet.h"
 #include "tins/tcp.h"
 #include "tins/udp.h"
+#include <bit>
 #include <cstdint>
 #include <iomanip>
 #include <limits>
 #include <sstream>
 #include <string_view>
-#include <bit>
 
 #include "flowmeter/service.h"
 #include "flowmeter/statistic.h"
@@ -95,7 +95,7 @@ struct Flow {
         }
         double one_prob = static_cast<double>(bit_count) / (total_bytes * 8.0);
         double zero_prob = 1 - one_prob;
-        double gini = 1.0 - ((one_prob * one_prob) + (zero_prob * zero_prob)); 
+        double gini = 1.0 - ((one_prob * one_prob) + (zero_prob * zero_prob));
         packet_entropy.update(gini);
 
         byte_count += total_bytes;

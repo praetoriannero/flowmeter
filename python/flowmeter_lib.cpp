@@ -1,5 +1,5 @@
 #include <string>
-
+#include <cstdint>
 #include <pybind11/pybind11.h>
 #include <flowmeter/meter.h>
 

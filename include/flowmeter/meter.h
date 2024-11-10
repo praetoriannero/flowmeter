@@ -26,8 +26,10 @@ struct MeterImpl {};
 
 class Meter {
   public:
-    Meter(const std::string &input_file, const std::string &output_file)
-        : sniffer_(input_file), pcap_path_(input_file), csv_path_(output_file) {}
+    Meter(const std::string &input_file, const std::string &output_file,
+          const double &active_timeout, const double &idle_timeout)
+        : sniffer_(input_file), pcap_path_(input_file), csv_path_(output_file),
+          active_timeout_(active_timeout), idle_timeout_(idle_timeout) {}
 
     void run() {
         std::cout << "Processing " << pcap_path_ << std::endl;
@@ -128,8 +130,8 @@ class Meter {
     std::string csv_path_;
     double seconds_;
     double pkts_per_sec_;
-    static constexpr double active_timeout_{120};
-    static constexpr double idle_timeout_{60};
+    double active_timeout_;
+    double idle_timeout_;
     static constexpr double status_increment_{1};
     static constexpr u_int64_t default_sub_id_{0};
     absl::flat_hash_map<ServicePair, NetworkFlow> flow_cache_;
