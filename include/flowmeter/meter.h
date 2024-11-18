@@ -39,6 +39,9 @@ class Meter {
         double last_check;
         uint64_t init_id = 0;
         std::ofstream out_file(csv_path_);
+
+        // TODO: create header in CSV file before starting this loop
+
         while (packet_ = sniffer_.next_packet()) {
             auto packet_ts = get_packet_timestamp(packet_);
 
@@ -46,6 +49,7 @@ class Meter {
                 last_packet_ts = packet_ts;
                 last_check = packet_ts;
             }
+
             pkt_count++;
 
             auto time_delta = packet_ts - last_check;
@@ -60,6 +64,7 @@ class Meter {
 
                         if (time_since_start >= this->active_timeout_) {
                             it.second.exp_code = ExpirationCode::ACTIVE_TIMEOUT;
+                            it.second.finalize();
                             out_file << it.second.to_string() << "\n";
                             it.second.sub_init_id++;
                             it.second.exp_code = ExpirationCode::ALIVE;
@@ -67,6 +72,7 @@ class Meter {
                             return false;
                         } else if (time_since_update >= this->idle_timeout_) {
                             it.second.exp_code = ExpirationCode::IDLE_TIMEOUT;
+                            it.second.finalize();
                             out_file << it.second.to_string() << "\n";
                             return true;
                         }
