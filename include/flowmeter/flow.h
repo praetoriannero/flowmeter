@@ -191,6 +191,12 @@ struct NetworkFlow {
         bidirectional.reset();
     }
 
+    void finalize() { 
+        bidirectional.finalize();
+        src2dst.finalize();
+        dst2src.finalize();
+    }
+
     NetworkFlow(const NetworkFlow &net_flow) = default;
 
     // NetworkFlow operator=(const NetworkFlow rhs) { return rhs; };
@@ -208,7 +214,6 @@ struct NetworkFlow {
     }
 
     double last_update_ts() const { return bidirectional.last_seen_ms; }
-
     const std::string column_names() const {
         std::stringstream ss;
         ss << "init_id,sub_init_id,expiration_reason," << service_pair.column_names()

@@ -1,7 +1,7 @@
-pybind11_add_module(flowmeter flowmeter_lib.cpp)
+pybind11_add_module(pyflowmeter flowmeter.cpp)
 
 target_include_directories(
-    flowmeter PUBLIC
+    pyflowmeter PUBLIC
     ${FLOWMETER_INCLUDE_DIR}
     ${LIBTINS_INCLUDE_DIR}
     ${FMT_INCLUDE_DIR}
@@ -10,5 +10,5 @@ target_include_directories(
     ${Python3_INCLUDE_DIRS}
     ${PYBIND11_INCLUDE_DIR}
 )
-target_link_libraries(flowmeter PUBLIC ${LIBTINS_SO_LOC} fmt::fmt CLI11::CLI11 absl::flat_hash_map)
-add_dependencies(flowmeter tins fmt CLI11)
+target_link_libraries(pyflowmeter PUBLIC ${LIBTINS_SO_LOC} fmt::fmt CLI11::CLI11 absl::flat_hash_map)
+add_dependencies(pyflowmeter tins fmt CLI11)
